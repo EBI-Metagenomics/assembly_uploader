@@ -108,7 +108,7 @@ class EnaQuery:
             )
         else:
             logging.warning(
-                "Not authenticated, fetching public data... check WEBIN_USERNAME and WEBIN_PASSWORD are set in your "
+                "Not authenticated, fetching public data... check ENA_WEBIN and ENA_WEBIN_PASSWORD are set in your "
                 "environment to access private data."
             )
             response = requests.post(
