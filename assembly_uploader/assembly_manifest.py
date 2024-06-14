@@ -123,7 +123,7 @@ class AssemblyManifest:
             ("COVERAGE", coverage),
             ("PROGRAM", assembler),
             ("PLATFORM", sequencer),
-            ("FASTA", assembly_path),
+            ("FASTA", os.path.abspath(assembly_path)),
             ("TPA", "true"),
         )
         logging.info("Writing manifest file (.manifest) for " + run_id)
