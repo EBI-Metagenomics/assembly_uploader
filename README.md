@@ -88,6 +88,13 @@ ena-webin-cli \
   -submit
 ```
 
+#### Optional step 5: publicly releasing a private study
+```bash
+release_study
+  --study STUDY         study ID (e.g. of the assembly study)
+  --test                run test submission only
+```
+
 More information on ENA's webin-cli can be found [in the ENA docs](<https://ena-docs.readthedocs.io/en/latest/submit/general-guide/webin-cli.html>).
 
 ### From a Python script
@@ -126,6 +133,12 @@ AssemblyManifestGenerator(
 
 The ENA submission requires `webin-cli`, so follow [Step 4](#step-4-upload-assemblies) above.
 (You could still call this from Python, e.g. with `subprocess.Popen`.)
+
+Finally, you can also publicly release a private/embargoed/held study:
+```python
+from assembly_uploader.release_study import release_study
+release_study("SRP272267")
+```
 
 ## Development setup
 Prerequisites: a functioning conda or pixi installation.

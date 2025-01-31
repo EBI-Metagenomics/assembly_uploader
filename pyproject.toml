@@ -39,6 +39,7 @@ packages = ["assembly_uploader"]
 study_xmls = "assembly_uploader.study_xmls:main"
 submit_study = "assembly_uploader.submit_study:main"
 assembly_manifest = "assembly_uploader.assembly_manifest:main"
+release_study = "assembly_uploader.release_study:main"
 
 [project.optional-dependencies]
 dev = [
