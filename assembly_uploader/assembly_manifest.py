@@ -196,23 +196,11 @@ class AssemblyManifestGenerator:
                 ena_query = EnaQuery(run, self.private)
                 ena_metadata = ena_query.build_query()
                 sample_accessions.add(ena_metadata["sample_accession"])
-                instruments.add(ena_metadata["instrument_model"].lower())
-
-            if row.get("Sequencer"):
-                instrument_model = row["Sequencer"].strip()
-            elif len(instruments) == 1:
-                instrument_model = next(iter(instruments)).title()
-            else:
-                logging.warning(
-                    f"Multiple instruments {','.join(instruments)} found for runs {row['Run']}. "
-                    f"Using 'mixed' instrument model."
-                )
-                instrument_model = "mixed"
-
+                instruments.add(ena_metadata["instrument_model"])
             self.generate_manifest(
                 row["Run"],
                 ",".join(sample_accessions),
-                instrument_model,
+                ",".join(instruments),
                 row["Coverage"],
                 row["Assembler"],
                 row["Version"],
