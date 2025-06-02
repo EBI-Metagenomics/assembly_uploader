@@ -2,7 +2,7 @@
 Upload of metagenome and metatranscriptome assemblies to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena)
 
 Pre-requisites:
-- CSV metadata file. One per study. See test/fixtures/test_metadata for an example
+- CSV metadata file. One per study. See `tests/fixtures/test_metadata` for an example
 - Compressed assembly fasta files in the locations defined in the metadata file
 
 Set the following environmental variables with your webin details:
@@ -32,7 +32,7 @@ pip install assembly-uploader
 **If you already have a registered study accession for your assembly files skip to step 3.**
 
 #### Step 1: generate XML files for a new assembly study submission
-This step will generate a folder STUDY_upload and a project XML and submission XML within it:
+This step will generate a folder `<STUDY>_upload` and a project XML and submission XML within it:
 
 ```bash
 study_xmls
@@ -59,12 +59,13 @@ submit_study
 
 #### Step 3: make a manifest file for each assembly
 
-This step will generate manifest files in the folder STUDY_UPLOAD for runs specified in the metadata file:
+This step will generate manifest files in the folder `<STUDY>_upload` for runs specified in the metadata file:
 
 ```bash
 assembly_manifest
   --study STUDY         raw reads study ID
-  --data DATA           metadata CSV - run_id, coverage, assembler, version, filepath
+  --data DATA           metadata CSV - run_ids, coverage, assembler, version, filepath and optionally sequencer 
+                        (inferred from read metadata if not specified)
   --assembly_study ASSEMBLY_STUDY
                         pre-existing study ID to submit to if available. Must exist in the webin account
   --force               overwrite all existing manifests

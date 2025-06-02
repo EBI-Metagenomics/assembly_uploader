@@ -155,11 +155,12 @@ class AssemblyManifestGenerator:
         assembly_alias = get_md5(assembly_path)
         assembler = f"{assembler} v{assembler_version}"
         # TODO: for co-assembly assembly_basename can be rediculously long, so using alternative naming scheme
-        if len(run_ids.split(",")) > 4:
-            assembly_basename = "_".join(run_ids[4])
+        runs_list = run_ids.split(",")
+        if len(runs_list) > 3:
+            assembly_basename = "_".join(runs_list[:3])
             manifest_path = os.path.join(self.upload_dir, f"{assembly_basename}_others_{assembly_alias}.manifest")
         else:
-            assembly_basename = "_".join(run_ids)
+            assembly_basename = "_".join(runs_list)
             manifest_path = os.path.join(self.upload_dir, f"{assembly_basename}.manifest")
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
