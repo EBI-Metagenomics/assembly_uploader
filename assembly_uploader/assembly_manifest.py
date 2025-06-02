@@ -81,7 +81,7 @@ def parse_args(argv):
 class AssemblyManifestGenerator:
     def __init__(
         self,
-        study: str,
+        study: str,   # TODO: if assembly is a co-assembly, many raw reads study are possible, not just one
         assembly_study: str,
         assemblies_csv: Path,
         output_dir: Path = None,
@@ -113,7 +113,7 @@ class AssemblyManifestGenerator:
 
     def generate_manifest(
         self,
-        run_id,
+        run_ids,
         sample,
         sequencer,
         coverage,
@@ -121,35 +121,41 @@ class AssemblyManifestGenerator:
         assembler_version,
         assembly_path,
     ):
-        logging.info("Writing manifest for " + run_id)
+        # TODO: add docstring
+        logging.info(f"Writing manifest for {run_ids}")
         #   sanity check assembly file provided
         if not os.path.exists(assembly_path):
             logging.error(
-                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {run_id}"
+                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {run_ids}"
             )
             return
         substrings = ["fa.gz", "fna.gz", "fasta.gz"]
         if not any(substring in assembly_path for substring in substrings):
             logging.error(
                 f"Assembly file {assembly_path} is either not fasta format or not compressed for run "
-                f"{run_id}."
+                f"{run_ids}."
             )
             return
         #   collect variables
         assembly_alias = get_md5(assembly_path)
         assembler = f"{assembler} v{assembler_version}"
-        manifest_path = os.path.join(self.upload_dir, f"{run_id}.manifest")
+        # TODO: for co-assembly assembly_basename can be rediculously long, so using alternative naming scheme
+        if run_ids.count(",") > 2:
+            assembly_basename = f"{self.new_project}_{assembly_alias}"
+        else:
+            assembly_basename = "_".join(run_ids)
+        manifest_path = os.path.join(self.upload_dir, f"{assembly_basename}.manifest")
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
-                f"Manifest for {run_id} already exists at {manifest_path}. Skipping"
+                f"Manifest for {run_ids} already exists at {manifest_path}. Skipping"
             )
             return
         values = (
             ("STUDY", self.new_project),
             ("SAMPLE", sample),
-            ("RUN_REF", run_id),
-            ("ASSEMBLYNAME", run_id + "_" + assembly_alias),
+            ("RUN_REF", run_ids),
+            ("ASSEMBLYNAME", assembly_basename + "_" + assembly_alias),
             ("ASSEMBLY_TYPE", "primary metagenome"),
             ("COVERAGE", coverage),
             ("PROGRAM", assembler),
@@ -157,7 +163,7 @@ class AssemblyManifestGenerator:
             ("FASTA", assembly_path),
             ("TPA", str(self.tpa).lower()),
         )
-        logging.info("Writing manifest file (.manifest) for " + run_id)
+        logging.info("Writing manifest file (.manifest) for " + run_ids)
         with open(manifest_path, "w") as outfile:
             for k, v in values:
                 manifest = f"{k}\t{v}\n"
@@ -165,12 +171,29 @@ class AssemblyManifestGenerator:
 
     def write_manifests(self):
         for row in self.metadata:
-            ena_query = EnaQuery(row["Run"], self.private)
-            ena_metadata = ena_query.build_query()
+            # TODO in theory private/non-private state can be different for each run in co-assembly
+            # collect sample accessions and instrument models from runs
+            sample_accessions = set()
+            instruments = set()
+            for run in row["Run"].split(","):
+                ena_query = EnaQuery(run, self.private)
+                ena_metadata = ena_query.build_query()
+                sample_accessions.add(ena_metadata["sample_accession"])
+                instruments.add(ena_metadata["instrument_model"].lower())
+            
+            if len(instruments) == 1:
+                instrument_model = next(iter(instruments))
+            else:
+                logging.warning(
+                    f"Multiple instruments {','.join(instruments)} found for assembly from runs {row['Run']}. "
+                    f"Using indefinite 'mixed' instrument model."
+                )
+                instrument_model = "mixed"
+
             self.generate_manifest(
                 row["Run"],
-                ena_metadata["sample_accession"],
-                ena_metadata["instrument_model"],
+                ",".join(sample_accessions),
+                instrument_model,
                 row["Coverage"],
                 row["Assembler"],
                 row["Version"],
