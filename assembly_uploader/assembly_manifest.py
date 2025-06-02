@@ -113,15 +113,30 @@ class AssemblyManifestGenerator:
 
     def generate_manifest(
         self,
-        run_ids,
-        sample,
-        sequencer,
-        coverage,
-        assembler,
-        assembler_version,
-        assembly_path,
+        run_ids: str,
+        sample: str,
+        sequencer: str,
+        coverage: str,
+        assembler: str,
+        assembler_version: str,
+        assembly_path: str,
     ):
-        # TODO: add docstring
+        """
+        Generate a manifest file for submission to ENA.
+
+        This method writes a manifest file for an assembly built from one or more sequencing runs.
+        For co-assemblies (multiple runs), metadata such as `sample` and `sequencer` may be derived
+        from a mix of ENA metadata or overridden by input.
+
+        :param run_ids: Comma-separated list of ENA run accessions used in the assembly.
+        :param sample: Comma-separated list of sample accessions.
+        :param sequencer: Instrument model used for sequencing; 'mixed' if multiple models used.
+        :param coverage: Reported coverage of the assembly.
+        :param assembler: Name of the assembler used.
+        :param assembler_version: Version of the assembler.
+        :param assembly_path: Path to the assembly FASTA file (gzipped).
+
+        """
         logging.info(f"Writing manifest for {run_ids}")
         #   sanity check assembly file provided
         if not os.path.exists(assembly_path):
@@ -140,11 +155,12 @@ class AssemblyManifestGenerator:
         assembly_alias = get_md5(assembly_path)
         assembler = f"{assembler} v{assembler_version}"
         # TODO: for co-assembly assembly_basename can be rediculously long, so using alternative naming scheme
-        if run_ids.count(",") > 2:
-            assembly_basename = f"{self.new_project}_{assembly_alias}"
+        if len(run_ids.split(",")) > 4:
+            assembly_basename = "_".join(run_ids[4])
+            manifest_path = os.path.join(self.upload_dir, f"{assembly_basename}_others_{assembly_alias}.manifest")
         else:
             assembly_basename = "_".join(run_ids)
-        manifest_path = os.path.join(self.upload_dir, f"{assembly_basename}.manifest")
+            manifest_path = os.path.join(self.upload_dir, f"{assembly_basename}.manifest")
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
@@ -171,22 +187,24 @@ class AssemblyManifestGenerator:
 
     def write_manifests(self):
         for row in self.metadata:
-            # TODO in theory private/non-private state can be different for each run in co-assembly
             # collect sample accessions and instrument models from runs
             sample_accessions = set()
             instruments = set()
             for run in row["Run"].split(","):
+                # TODO in theory private/non-private state can be different for runs in co-assembly
                 ena_query = EnaQuery(run, self.private)
                 ena_metadata = ena_query.build_query()
                 sample_accessions.add(ena_metadata["sample_accession"])
                 instruments.add(ena_metadata["instrument_model"].lower())
-            
-            if len(instruments) == 1:
-                instrument_model = next(iter(instruments))
+
+            if row.get("Sequencer"):
+                instrument_model = row["Sequencer"].strip()
+            elif len(instruments) == 1:
+                instrument_model = next(iter(instruments)).title()
             else:
                 logging.warning(
-                    f"Multiple instruments {','.join(instruments)} found for assembly from runs {row['Run']}. "
-                    f"Using indefinite 'mixed' instrument model."
+                    f"Multiple instruments {','.join(instruments)} found for runs {row['Run']}. "
+                    f"Using 'mixed' instrument model."
                 )
                 instrument_model = "mixed"
 
