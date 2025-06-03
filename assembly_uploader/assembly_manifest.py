@@ -45,7 +45,8 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(
         description="Generate manifests for assembly uploads"
     )
-    parser.add_argument("--study", help="raw reads study ID", required=True)
+    # --study only used to name the upload directory, treat this arg as a label
+    parser.add_argument("--study", help="raw reads study ID", required=True) 
     parser.add_argument(
         "--data", help="metadata CSV - runs, coverage, assembler, version, filepath"
     )
@@ -81,7 +82,7 @@ def parse_args(argv):
 class AssemblyManifestGenerator:
     def __init__(
         self,
-        study: str,   # TODO: if assembly is a co-assembly, many raw reads study are possible, not just one
+        study: str,   # only used to name the upload directory
         assembly_study: str,
         assemblies_csv: Path,
         output_dir: Path = None,
@@ -154,7 +155,6 @@ class AssemblyManifestGenerator:
         #   collect variables
         assembly_alias = get_md5(assembly_path)
         assembler = f"{assembler} v{assembler_version}"
-        # TODO: for co-assembly assembly_basename can be rediculously long, so using alternative naming scheme
         manifest_path = os.path.join(self.upload_dir, f"{assembly_alias}.manifest")
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
