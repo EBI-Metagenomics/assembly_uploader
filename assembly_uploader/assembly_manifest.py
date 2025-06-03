@@ -47,7 +47,7 @@ def parse_args(argv):
     )
     parser.add_argument("--study", help="raw reads study ID", required=True)
     parser.add_argument(
-        "--data", help="metadata CSV - run_id, coverage, assembler, version, filepath"
+        "--data", help="metadata CSV - runs, coverage, assembler, version, filepath"
     )
     parser.add_argument(
         "--assembly_study",
@@ -93,7 +93,7 @@ class AssemblyManifestGenerator:
         Create an assembly manifest file for uploading assemblies detailed in assemblies_csv into the assembly_study.
         :param study: study accession of the raw reads study
         :param assembly_study: study accession of the assembly study (e.g. created by Study XMLs)
-        :param assemblies_csv: path to assemblies CSV file, listing run_id, coverage, assembler, version, filepath of each assembly
+        :param assemblies_csv: path to assemblies CSV file, listing runs, coverage, assembler, version, filepath of each assembly
         :param output_dir: path to output directory, otherwise CWD
         :param force: overwrite existing manifests
         :param private: is this a private study?
@@ -113,7 +113,7 @@ class AssemblyManifestGenerator:
 
     def generate_manifest(
         self,
-        run_ids: str,
+        runs: str,
         sample: str,
         sequencer: str,
         coverage: str,
@@ -128,27 +128,27 @@ class AssemblyManifestGenerator:
         For co-assemblies (multiple runs), metadata such as `sample` and `sequencer` may be derived
         from a mix of ENA metadata or overridden by input.
 
-        :param run_ids: Comma-separated list of ENA run accessions used in the assembly.
-        :param sample: Comma-separated list of sample accessions.
-        :param sequencer: Instrument model used for sequencing; 'mixed' if multiple models used.
+        :param runs: Comma-separated list of ENA runs' accessions used in the assembly.
+        :param sample: Sample accession. Can only be one sample accession, even for co-assemblies.
+        :param sequencer: Instrument model used for sequencing.
         :param coverage: Reported coverage of the assembly.
         :param assembler: Name of the assembler used.
         :param assembler_version: Version of the assembler.
         :param assembly_path: Path to the assembly FASTA file (gzipped).
 
         """
-        logging.info(f"Writing manifest for {run_ids}")
+        logging.info(f"Writing manifest for {runs}")
         #   sanity check assembly file provided
         if not os.path.exists(assembly_path):
             logging.error(
-                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {run_ids}"
+                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {runs}"
             )
             return
         substrings = ["fa.gz", "fna.gz", "fasta.gz"]
         if not any(substring in assembly_path for substring in substrings):
             logging.error(
                 f"Assembly file {assembly_path} is either not fasta format or not compressed for run "
-                f"{run_ids}."
+                f"{runs}."
             )
             return
         #   collect variables
@@ -165,13 +165,13 @@ class AssemblyManifestGenerator:
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
-                f"Manifest for {run_ids} already exists at {manifest_path}. Skipping"
+                f"Manifest for {runs} already exists at {manifest_path}. Skipping"
             )
             return
         values = (
             ("STUDY", self.new_project),
             ("SAMPLE", sample),
-            ("RUN_REF", run_ids),
+            ("RUN_REF", runs),
             ("ASSEMBLYNAME", assembly_basename + "_" + assembly_alias),
             ("ASSEMBLY_TYPE", "primary metagenome"),
             ("COVERAGE", coverage),
@@ -180,7 +180,7 @@ class AssemblyManifestGenerator:
             ("FASTA", assembly_path),
             ("TPA", str(self.tpa).lower()),
         )
-        logging.info("Writing manifest file (.manifest) for " + run_ids)
+        logging.info("Writing manifest file (.manifest) for " + runs)
         with open(manifest_path, "w") as outfile:
             for k, v in values:
                 manifest = f"{k}\t{v}\n"
@@ -191,14 +191,14 @@ class AssemblyManifestGenerator:
             # collect sample accessions and instrument models from runs
             sample_accessions = set()
             instruments = set()
-            for run in row["Run"].split(","):
+            for run in row["Runs"].split(","):
                 # TODO in theory private/non-private state can be different for runs in co-assembly
                 ena_query = EnaQuery(run, self.private)
                 ena_metadata = ena_query.build_query()
                 sample_accessions.add(ena_metadata["sample_accession"])
                 instruments.add(ena_metadata["instrument_model"])
             self.generate_manifest(
-                row["Run"],
+                row["Runs"],
                 ",".join(sample_accessions),
                 ",".join(instruments),
                 row["Coverage"],
