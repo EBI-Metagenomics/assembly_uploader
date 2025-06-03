@@ -120,7 +120,7 @@ class AssemblyManifestGenerator:
         coverage: str,
         assembler: str,
         assembler_version: str,
-        assembly_path: str,
+        assembly_path: Path,
     ):
         """
         Generate a manifest file for submission to ENA.
@@ -140,13 +140,13 @@ class AssemblyManifestGenerator:
         """
         logging.info(f"Writing manifest for {runs}")
         #   sanity check assembly file provided
-        if not os.path.exists(assembly_path):
+        if not assembly_path.exists():
             logging.error(
                 f"Assembly path {assembly_path} does not exist. Skipping manifest for run {runs}"
             )
             return
-        substrings = ["fa.gz", "fna.gz", "fasta.gz"]
-        if not any(substring in assembly_path for substring in substrings):
+        valid_extensions = (".fa.gz", ".fna.gz", ".fasta.gz")
+        if not str(assembly_path).endswith(valid_extensions):
             logging.error(
                 f"Assembly file {assembly_path} is either not fasta format or not compressed for run "
                 f"{runs}."
@@ -198,7 +198,7 @@ class AssemblyManifestGenerator:
                 row["Coverage"],
                 row["Assembler"],
                 row["Version"],
-                row["Filepath"],
+                Path(row["Filepath"]),
             )
 
     # alias for convenience
