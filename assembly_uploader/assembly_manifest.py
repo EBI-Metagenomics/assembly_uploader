@@ -126,7 +126,7 @@ class AssemblyManifestGenerator:
 
         This method writes a manifest file for an assembly built from one or more sequencing runs.
         For co-assemblies (multiple runs), metadata such as `sample` and `sequencer` may be derived
-        from a mix of ENA metadata or overridden by input.
+        from a mix of ENA metadata or overridden by input. #TODO
 
         :param runs: Comma-separated list of ENA runs' accessions used in the assembly.
         :param sample: Sample accession. Can only be one sample accession, even for co-assemblies.
@@ -155,13 +155,7 @@ class AssemblyManifestGenerator:
         assembly_alias = get_md5(assembly_path)
         assembler = f"{assembler} v{assembler_version}"
         # TODO: for co-assembly assembly_basename can be rediculously long, so using alternative naming scheme
-        runs_list = run_ids.split(",")
-        if len(runs_list) > 3:
-            assembly_basename = "_".join(runs_list[:3])
-            manifest_path = os.path.join(self.upload_dir, f"{assembly_basename}_others_{assembly_alias}.manifest")
-        else:
-            assembly_basename = "_".join(runs_list)
-            manifest_path = os.path.join(self.upload_dir, f"{assembly_basename}.manifest")
+        manifest_path = os.path.join(self.upload_dir, f"{assembly_alias}.manifest")
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
@@ -172,7 +166,7 @@ class AssemblyManifestGenerator:
             ("STUDY", self.new_project),
             ("SAMPLE", sample),
             ("RUN_REF", runs),
-            ("ASSEMBLYNAME", assembly_basename + "_" + assembly_alias),
+            ("ASSEMBLYNAME", assembly_alias),
             ("ASSEMBLY_TYPE", "primary metagenome"),
             ("COVERAGE", coverage),
             ("PROGRAM", assembler),
