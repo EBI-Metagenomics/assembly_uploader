@@ -46,7 +46,7 @@ def parse_args(argv):
         description="Generate manifests for assembly uploads"
     )
     # --study only used to name the upload directory, treat this arg as a label
-    parser.add_argument("--study", help="raw reads study ID", required=True) 
+    parser.add_argument("--study", help="raw reads study ID", required=True)
     parser.add_argument(
         "--data", help="metadata CSV - runs, coverage, assembler, version, filepath"
     )
@@ -82,7 +82,7 @@ def parse_args(argv):
 class AssemblyManifestGenerator:
     def __init__(
         self,
-        study: str,   # only used to name the upload directory
+        study: str,  # only used to name the upload directory
         assembly_study: str,
         assemblies_csv: Path,
         output_dir: Path = None,
@@ -191,6 +191,12 @@ class AssemblyManifestGenerator:
                 ena_metadata = ena_query.build_query()
                 sample_accessions.add(ena_metadata["sample_accession"])
                 instruments.add(ena_metadata["instrument_model"])
+
+            # Check if more than one sample - log error and skip if so
+            if len(sample_accessions) > 1:
+                logging.error(f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. Skipping.")
+                continue
+
             self.generate_manifest(
                 row["Runs"],
                 ",".join(sample_accessions),
