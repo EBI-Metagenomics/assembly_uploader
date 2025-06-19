@@ -48,7 +48,7 @@ def parse_args(argv):
     # --study only used to name the upload directory, treat this arg as a label
     parser.add_argument("--study", help="raw reads study ID", required=True)
     parser.add_argument(
-        "--data", help="metadata CSV - runs, coverage, assembler, version, filepath"
+        "--data", help="metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample"
     )
     parser.add_argument(
         "--assembly_study",
@@ -95,6 +95,7 @@ class AssemblyManifestGenerator:
         :param study: study accession of the raw reads study
         :param assembly_study: study accession of the assembly study (e.g. created by Study XMLs)
         :param assemblies_csv: path to assemblies CSV file, listing runs, coverage, assembler, version, filepath of each assembly
+                            Optionally, a 'Sample' column can be included to specify sample accession for co-assemblies
         :param output_dir: path to output directory, otherwise CWD
         :param force: overwrite existing manifests
         :param private: is this a private study?
@@ -126,8 +127,6 @@ class AssemblyManifestGenerator:
         Generate a manifest file for submission to ENA.
 
         This method writes a manifest file for an assembly built from one or more sequencing runs.
-        For co-assemblies (multiple runs), metadata such as `sample` and `sequencer` may be derived
-        from a mix of ENA metadata or overridden by input. #TODO
 
         :param runs: Comma-separated list of ENA runs' accessions used in the assembly.
         :param sample: Sample accession. Can only be one sample accession, even for co-assemblies.
@@ -192,14 +191,22 @@ class AssemblyManifestGenerator:
                 sample_accessions.add(ena_metadata["sample_accession"])
                 instruments.add(ena_metadata["instrument_model"])
 
-            # Check if more than one sample - log error and skip if so
-            if len(sample_accessions) > 1:
-                logging.error(f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. Skipping.")
+            # only one sample accession can be used for the assembly
+            if len(sample_accessions) == 1:
+                sample_accession = sample_accessions.pop()
+            elif row.get('Sample'):
+                # Use the explicitly provided sample accession
+                sample_accession = row['Sample']
+            else:
+                logging.error(
+                    f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. "
+                    f"Please specify a sample accession in the 'Sample' column of your CSV to resolve this. Skipping."
+                )
                 continue
 
             self.generate_manifest(
                 row["Runs"],
-                ",".join(sample_accessions),
+                sample_accession,
                 ",".join(instruments),
                 row["Coverage"],
                 row["Assembler"],
