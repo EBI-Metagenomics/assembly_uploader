@@ -58,7 +58,7 @@ submit_study
 ```
 
 #### Step 3: make a manifest file for each assembly
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > **Please read carefully before creating manifest files for co-assemblies:**
 > 1. **Co-assemblies cannot be generated from a mix of private and public runs** - all runs used in a co-assembly must have the same privacy status (all private or all public).
 > 2. **If your co-assembly was assembled from runs generated from multiple biological samples, you must first register a co-assembly sample** (see [ENA FAQ on co-assemblies](https://ena-docs.readthedgets.io/en/latest/faq/metagenomes.html#how-do-i-register-samples-for-co-assemblies)) and then specify it in the `Sample` column of your metadata CSV file.

@@ -48,7 +48,8 @@ def parse_args(argv):
     # --study only used to name the upload directory, treat this arg as a label
     parser.add_argument("--study", help="raw reads study ID", required=True)
     parser.add_argument(
-        "--data", help="metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample"
+        "--data",
+        help="metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample",
     )
     parser.add_argument(
         "--assembly_study",
@@ -154,7 +155,7 @@ class AssemblyManifestGenerator:
         #   collect variables
         assembly_alias = get_md5(assembly_path)
         assembler = f"{assembler} v{assembler_version}"
-        manifest_path = Path(self.upload_dir) / f"{assembly_alias}.manifest" 
+        manifest_path = Path(self.upload_dir) / f"{assembly_alias}.manifest"
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
@@ -195,9 +196,9 @@ class AssemblyManifestGenerator:
             # only one sample accession can be used for the assembly
             if len(sample_accessions) == 1:
                 sample_accession = sample_accessions.pop()
-            elif row.get('Sample'):
+            elif row.get("Sample"):
                 # Use the explicitly provided sample accession
-                sample_accession = row['Sample']
+                sample_accession = row["Sample"]
             else:
                 logging.error(
                     f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. "
