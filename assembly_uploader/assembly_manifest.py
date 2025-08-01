@@ -45,9 +45,11 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(
         description="Generate manifests for assembly uploads"
     )
+    # --study only used to name the upload directory, treat this arg as a label
     parser.add_argument("--study", help="raw reads study ID", required=True)
     parser.add_argument(
-        "--data", help="metadata CSV - run_id, coverage, assembler, version, filepath"
+        "--data",
+        help="metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample",
     )
     parser.add_argument(
         "--assembly_study",
@@ -81,7 +83,7 @@ def parse_args(argv):
 class AssemblyManifestGenerator:
     def __init__(
         self,
-        study: str,
+        study: str,  # only used to name the upload directory
         assembly_study: str,
         assemblies_csv: Path,
         output_dir: Path = None,
@@ -93,7 +95,8 @@ class AssemblyManifestGenerator:
         Create an assembly manifest file for uploading assemblies detailed in assemblies_csv into the assembly_study.
         :param study: study accession of the raw reads study
         :param assembly_study: study accession of the assembly study (e.g. created by Study XMLs)
-        :param assemblies_csv: path to assemblies CSV file, listing run_id, coverage, assembler, version, filepath of each assembly
+        :param assemblies_csv: path to assemblies CSV file, listing runs, coverage, assembler, version, filepath of each assembly
+                            Optionally, a 'Sample' column can be included to specify sample accession for co-assemblies
         :param output_dir: path to output directory, otherwise CWD
         :param force: overwrite existing manifests
         :param private: is this a private study?
@@ -113,43 +116,57 @@ class AssemblyManifestGenerator:
 
     def generate_manifest(
         self,
-        run_id,
-        sample,
-        sequencer,
-        coverage,
-        assembler,
-        assembler_version,
-        assembly_path,
-    ):
-        logging.info("Writing manifest for " + run_id)
+        runs: str,
+        sample: str,
+        sequencer: str,
+        coverage: str,
+        assembler: str,
+        assembler_version: str,
+        assembly_path: Path,
+    ) -> Path | None:
+        """
+        Generate a manifest file for submission to ENA.
+
+        This method writes a manifest file for an assembly built from one or more sequencing runs.
+
+        :param runs: Comma-separated list of ENA runs' accessions used in the assembly.
+        :param sample: Sample accession. Can only be one sample accession, even for co-assemblies.
+        :param sequencer: Instrument model used for sequencing.
+        :param coverage: Reported coverage of the assembly.
+        :param assembler: Name of the assembler used.
+        :param assembler_version: Version of the assembler.
+        :param assembly_path: Path to the assembly FASTA file (gzipped).
+
+        """
+        logging.info(f"Writing manifest for {runs}")
         #   sanity check assembly file provided
-        if not os.path.exists(assembly_path):
+        if not assembly_path.exists():
             logging.error(
-                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {run_id}"
+                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {runs}"
             )
-            return
-        substrings = ["fa.gz", "fna.gz", "fasta.gz"]
-        if not any(substring in assembly_path for substring in substrings):
+            return None
+        valid_extensions = (".fa.gz", ".fna.gz", ".fasta.gz")
+        if not str(assembly_path).endswith(valid_extensions):
             logging.error(
                 f"Assembly file {assembly_path} is either not fasta format or not compressed for run "
-                f"{run_id}."
+                f"{runs}."
             )
-            return
+            return None
         #   collect variables
         assembly_alias = get_md5(assembly_path)
         assembler = f"{assembler} v{assembler_version}"
-        manifest_path = os.path.join(self.upload_dir, f"{run_id}.manifest")
+        manifest_path = Path(self.upload_dir) / f"{assembly_alias}.manifest"
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
-                f"Manifest for {run_id} already exists at {manifest_path}. Skipping"
+                f"Manifest for {runs} already exists at {manifest_path}. Skipping"
             )
-            return
+            return manifest_path
         values = (
             ("STUDY", self.new_project),
             ("SAMPLE", sample),
-            ("RUN_REF", run_id),
-            ("ASSEMBLYNAME", run_id + "_" + assembly_alias),
+            ("RUN_REF", runs),
+            ("ASSEMBLYNAME", assembly_alias),
             ("ASSEMBLY_TYPE", "primary metagenome"),
             ("COVERAGE", coverage),
             ("PROGRAM", assembler),
@@ -157,24 +174,46 @@ class AssemblyManifestGenerator:
             ("FASTA", assembly_path),
             ("TPA", str(self.tpa).lower()),
         )
-        logging.info("Writing manifest file (.manifest) for " + run_id)
+        logging.info("Writing manifest file (.manifest) for " + runs)
         with open(manifest_path, "w") as outfile:
             for k, v in values:
                 manifest = f"{k}\t{v}\n"
                 outfile.write(manifest)
+        return manifest_path
 
     def write_manifests(self):
         for row in self.metadata:
-            ena_query = EnaQuery(row["Run"], self.private)
-            ena_metadata = ena_query.build_query()
+            # collect sample accessions and instrument models from runs
+            sample_accessions = set()
+            instruments = set()
+            for run in row["Runs"].split(","):
+                # TODO in theory private/non-private state can be different for runs in co-assembly
+                ena_query = EnaQuery(run, self.private)
+                ena_metadata = ena_query.build_query()
+                sample_accessions.add(ena_metadata["sample_accession"])
+                instruments.add(ena_metadata["instrument_model"])
+
+            # only one sample accession can be used for the assembly
+            if len(sample_accessions) == 1:
+                sample_accession = sample_accessions.pop()
+            elif row.get("Sample"):
+                # Use the explicitly provided sample accession
+                sample_accession = row["Sample"]
+            else:
+                logging.error(
+                    f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. "
+                    f"Please specify a sample accession in the 'Sample' column of your CSV to resolve this. Skipping."
+                )
+                continue
+
             self.generate_manifest(
-                row["Run"],
-                ena_metadata["sample_accession"],
-                ena_metadata["instrument_model"],
+                row["Runs"],
+                sample_accession,
+                ",".join(instruments),
                 row["Coverage"],
                 row["Assembler"],
                 row["Version"],
-                row["Filepath"],
+                Path(row["Filepath"]),
             )
 
     # alias for convenience

@@ -2,7 +2,7 @@
 Upload of metagenome and metatranscriptome assemblies to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena)
 
 Pre-requisites:
-- CSV metadata file. One per study. See test/fixtures/test_metadata for an example
+- CSV metadata file. One per study. See `tests/fixtures/test_metadata` for an example
 - Compressed assembly fasta files in the locations defined in the metadata file
 
 Set the following environmental variables with your webin details:
@@ -32,7 +32,7 @@ pip install assembly-uploader
 **If you already have a registered study accession for your assembly files skip to step 3.**
 
 #### Step 1: generate XML files for a new assembly study submission
-This step will generate a folder STUDY_upload and a project XML and submission XML within it:
+This step will generate a folder `<STUDY>_upload` and a project XML and submission XML within it:
 
 ```bash
 study_xmls
@@ -58,13 +58,17 @@ submit_study
 ```
 
 #### Step 3: make a manifest file for each assembly
+> [!IMPORTANT]
+> **Please read carefully before creating manifest files for co-assemblies:**
+> 1. **Co-assemblies cannot be generated from a mix of private and public runs** - all runs used in a co-assembly must have the same privacy status (all private or all public).
+> 2. **If your co-assembly was assembled from runs generated from multiple biological samples, you must first register a co-assembly sample** (see [ENA FAQ on co-assemblies](https://ena-docs.readthedgets.io/en/latest/faq/metagenomes.html#how-do-i-register-samples-for-co-assemblies)) and then specify it in the `Sample` column of your metadata CSV file.
 
-This step will generate manifest files in the folder STUDY_UPLOAD for runs specified in the metadata file:
+This step will generate manifest files in the folder `<STUDY>_upload` for runs specified in the metadata file:
 
 ```bash
 assembly_manifest
   --study STUDY         raw reads study ID
-  --data DATA           metadata CSV - run_id, coverage, assembler, version, filepath
+  --data DATA           metadata CSV - runs (comma-separated and in quotes, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath and optionally sample
   --assembly_study ASSEMBLY_STUDY
                         pre-existing study ID to submit to if available. Must exist in the webin account
   --force               overwrite all existing manifests
