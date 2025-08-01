@@ -116,7 +116,7 @@ class AssemblyManifestGenerator:
 
     def generate_manifest(
         self,
-        runs: str,
+        runs: list,
         sample: str,
         sequencer: str,
         coverage: str,
@@ -138,34 +138,37 @@ class AssemblyManifestGenerator:
         :param assembly_path: Path to the assembly FASTA file (gzipped).
 
         """
-        logging.info(f"Writing manifest for {runs}")
+        runs_str = ",".join(runs)
+
+        logging.info(f"Writing manifest for {runs_str}")
         #   sanity check assembly file provided
         if not assembly_path.exists():
             logging.error(
-                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {runs}"
+                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {runs_str}"
             )
             return None
         valid_extensions = (".fa.gz", ".fna.gz", ".fasta.gz")
         if not str(assembly_path).endswith(valid_extensions):
             logging.error(
                 f"Assembly file {assembly_path} is either not fasta format or not compressed for run "
-                f"{runs}."
+                f"{runs_str}."
             )
             return None
         #   collect variables
-        assembly_alias = get_md5(assembly_path)
+        assembly_md5 = get_md5(assembly_path)
+        assembly_alias = f"{runs[0]}{'_others' if len(runs) > 1 else ''}_{assembly_md5}"
         assembler = f"{assembler} v{assembler_version}"
-        manifest_path = Path(self.upload_dir) / f"{assembly_alias}.manifest"
+        manifest_path = Path(self.upload_dir) / f"{assembly_md5}.manifest"
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
-                f"Manifest for {runs} already exists at {manifest_path}. Skipping"
+                f"Manifest for {runs_str} already exists at {manifest_path}. Skipping"
             )
             return manifest_path
         values = (
             ("STUDY", self.new_project),
             ("SAMPLE", sample),
-            ("RUN_REF", runs),
+            ("RUN_REF", runs_str),
             ("ASSEMBLYNAME", assembly_alias),
             ("ASSEMBLY_TYPE", "primary metagenome"),
             ("COVERAGE", coverage),
@@ -174,7 +177,7 @@ class AssemblyManifestGenerator:
             ("FASTA", assembly_path),
             ("TPA", str(self.tpa).lower()),
         )
-        logging.info("Writing manifest file (.manifest) for " + runs)
+        logging.info("Writing manifest file (.manifest) for " + runs_str)
         with open(manifest_path, "w") as outfile:
             for k, v in values:
                 manifest = f"{k}\t{v}\n"
@@ -207,7 +210,7 @@ class AssemblyManifestGenerator:
                 continue
 
             self.generate_manifest(
-                row["Runs"],
+                row["Runs"].split(","),
                 sample_accession,
                 ",".join(instruments),
                 row["Coverage"],
