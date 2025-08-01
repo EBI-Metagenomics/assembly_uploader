@@ -37,7 +37,7 @@ def assemblies_metadata():
 
 @pytest.fixture(scope="module")
 def run_manifest(study_submission_xml_dir):
-    return study_submission_xml_dir / Path("ERR4918394.manifest")
+    return study_submission_xml_dir / Path("d41d8cd98f00b204e9800998ecf8427e.manifest")
 
 
 @pytest.fixture(scope="module")

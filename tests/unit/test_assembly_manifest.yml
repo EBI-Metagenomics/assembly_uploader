@@ -3,5 +3,7 @@
     - assembly_manifest
   command: assembly_manifest --study ERP125469 --data tests/fixtures/test_metadata --assembly_study PRJ1 --tpa
   files:
-    - path: "ERP125469_upload/ERR4918394.manifest"
+    - path: "ERP125469_upload/d41d8cd98f00b204e9800998ecf8427e.manifest"
       md5sum: a8e90497b19f07811060158071753311
+    - path: "ERP125469_upload/fb038a4a2af07fe2c90793c1df7c2c2d.manifest"
+      md5sum: 752a89fece03858ff1dc2364ec877dfb
