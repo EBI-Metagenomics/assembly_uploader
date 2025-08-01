@@ -132,7 +132,7 @@ class StudyXMLGenerator:
         )
         self._title = title
         abstract = (
-            f"The {sub_abstract} assembly was derived from the primary data "
+            f"The {sub_abstract}assembly was derived from the primary data "
             f"set {self.study_obj['study_accession']}"
         )
         self._abstract = abstract
