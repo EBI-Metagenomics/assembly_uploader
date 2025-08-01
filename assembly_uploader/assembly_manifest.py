@@ -122,7 +122,7 @@ class AssemblyManifestGenerator:
         assembler: str,
         assembler_version: str,
         assembly_path: Path,
-    ):
+    ) -> Path | None:
         """
         Generate a manifest file for submission to ENA.
 
@@ -143,24 +143,24 @@ class AssemblyManifestGenerator:
             logging.error(
                 f"Assembly path {assembly_path} does not exist. Skipping manifest for run {runs}"
             )
-            return
+            return None
         valid_extensions = (".fa.gz", ".fna.gz", ".fasta.gz")
         if not str(assembly_path).endswith(valid_extensions):
             logging.error(
                 f"Assembly file {assembly_path} is either not fasta format or not compressed for run "
                 f"{runs}."
             )
-            return
+            return None
         #   collect variables
         assembly_alias = get_md5(assembly_path)
         assembler = f"{assembler} v{assembler_version}"
-        manifest_path = os.path.join(self.upload_dir, f"{assembly_alias}.manifest")
+        manifest_path = Path(self.upload_dir) / f"{assembly_alias}.manifest" 
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
                 f"Manifest for {runs} already exists at {manifest_path}. Skipping"
             )
-            return
+            return manifest_path
         values = (
             ("STUDY", self.new_project),
             ("SAMPLE", sample),
@@ -178,6 +178,7 @@ class AssemblyManifestGenerator:
             for k, v in values:
                 manifest = f"{k}\t{v}\n"
                 outfile.write(manifest)
+        return manifest_path
 
     def write_manifests(self):
         for row in self.metadata:
