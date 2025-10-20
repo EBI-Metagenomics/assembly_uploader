@@ -132,7 +132,7 @@ class EnaQuery:
             }
         except AttributeError:
             # if the release date was postponed, firstPublic == None
-            # fallback on holDate
+            # fallback on holdDate
             reformatted_data = {
                 "study_accession": study_data["secondaryId"],
                 "study_title": study_data["title"],
