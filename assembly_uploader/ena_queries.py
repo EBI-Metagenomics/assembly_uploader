@@ -127,7 +127,7 @@ class EnaQuery:
             reformatted_data = {
                 "study_accession": study_data["secondaryId"],
                 "study_title": study_data["title"],
-                #   remove time and keep date
+                # remove time and keep date
                 "first_public": study_data["firstPublic"].split("T")[0],
             }
         except AttributeError:
