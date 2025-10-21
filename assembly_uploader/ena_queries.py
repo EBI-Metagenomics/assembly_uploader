@@ -123,12 +123,21 @@ class EnaQuery:
         response = self.retry_or_handle_request_error(self.get_request, url)
         study = self.get_data_or_handle_error(response)
         study_data = study["report"]
-        reformatted_data = {
-            "study_accession": study_data["secondaryId"],
-            "study_title": study_data["title"],
-            #   remove time and keep date
-            "first_public": study_data["firstPublic"].split("T")[0],
-        }
+        try:
+            reformatted_data = {
+                "study_accession": study_data["secondaryId"],
+                "study_title": study_data["title"],
+                # remove time and keep date
+                "first_public": study_data["firstPublic"].split("T")[0],
+            }
+        except AttributeError:
+            # if the release date was postponed, firstPublic == None
+            # fallback on holdDate
+            reformatted_data = {
+                "study_accession": study_data["secondaryId"],
+                "study_title": study_data["title"],
+                "first_public": study_data["holdDate"].split("T")[0],
+            }
         logging.info(f"{self.accession} private study returned from ENA")
         return reformatted_data
 
