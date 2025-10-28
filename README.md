@@ -54,6 +54,7 @@ This step submit the XML to ENA and generate a new assembly study accession. Kee
 ```bash
 submit_study
   --study STUDY         raw reads study ID
+  --directory PATH      directory containing study XML
   --test                run test submission only
 ```
 

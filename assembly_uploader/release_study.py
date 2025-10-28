@@ -1,4 +1,5 @@
-import argparse
+import click
+import importlib.metadata
 import logging
 import tempfile
 import xml.etree.ElementTree as ET
@@ -12,6 +13,8 @@ from assembly_uploader.webin_utils import (
     ensure_webin_credentials_exist,
     get_webin_credentials,
 )
+
+__version__ = importlib.metadata.version("assembly_uploader")
 
 
 class StudyReleaseError(Exception):
@@ -53,26 +56,31 @@ def release_study(accession: str, is_test: bool = False, xml_path: Path = None):
             raise StudyReleaseError(f"Failed to release {accession}. {receipt_xml_str}")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Release a private/held study on ENA, e.g. an uploaded assembly study"
-    )
-    parser.add_argument("--study", help="Study ID", required=True)
-    parser.add_argument(
-        "--xml_path", help="Path to use for the release XML submission", required=False
-    )
-    parser.add_argument(
-        "--test",
-        help="Use Webin Dev dropbox instead of prod",
-        required=False,
-        default=False,
-        action="store_true",
-    )
-    args = parser.parse_args()
+@click.command(help="Release a private/held study on ENA, e.g. an uploaded assembly study")
+@click.version_option(__version__, message="assembly_uploader %(version)s")
+@click.option(
+    "--study",
+    required=True,
+    help="Study ID"
+)
+@click.option(
+    "--xml_path",
+    required=False,
+    help="Path to use for the release XML submission"
+)
+@click.option(
+    "--test",
+    required=False,
+    default=False,
+    help="Use Webin Dev dropbox instead of prod",
+    is_flag=True
+)
+
+def main(study, test, xml_path):
 
     ensure_webin_credentials_exist()
 
-    release_study(args.study, args.test, Path(args.xml_path))
+    release_study(study, test, Path(xml_path))
 
 
 if __name__ == "__main__":

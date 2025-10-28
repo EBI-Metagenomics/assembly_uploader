@@ -14,17 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
+import click
+import importlib.metadata
 import csv
 import hashlib
 import logging
 import os
-import sys
 from pathlib import Path
 
 from .ena_queries import EnaQuery
 
 logging.basicConfig(level=logging.INFO)
+
+__version__ = importlib.metadata.version("assembly_uploader")
 
 
 def parse_info(data_file):
@@ -39,45 +41,6 @@ def get_md5(path_to_file):
         for chunk in iter(lambda: f.read(4096), b""):
             md5_hash.update(chunk)
     return md5_hash.hexdigest()
-
-
-def parse_args(argv):
-    parser = argparse.ArgumentParser(
-        description="Generate manifests for assembly uploads"
-    )
-    # --study only used to name the upload directory, treat this arg as a label
-    parser.add_argument("--study", help="raw reads study ID", required=True)
-    parser.add_argument(
-        "--data",
-        help="metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample",
-    )
-    parser.add_argument(
-        "--assembly_study",
-        help="pre-existing study ID to submit to if available. "
-        "Must exist in the webin account",
-        required=False,
-    )
-    parser.add_argument(
-        "--force",
-        help="overwrite all existing manifests",
-        required=False,
-        action="store_true",
-    )
-    parser.add_argument("--output-dir", help="Path to output directory", required=False)
-    parser.add_argument(
-        "--private",
-        help="use flag if private",
-        required=False,
-        default=False,
-        action="store_true",
-    )
-    parser.add_argument(
-        "--tpa",
-        help="use this flag if the study is a third party assembly. Default False",
-        action="store_true",
-        default=False,
-    )
-    return parser.parse_args(argv)
 
 
 class AssemblyManifestGenerator:
@@ -222,17 +185,57 @@ class AssemblyManifestGenerator:
     # alias for convenience
     write = write_manifests
 
-
-def main():
-    args = parse_args(sys.argv[1:])
+@click.command(help="Generate manifests for assembly uploads")
+@click.version_option(__version__, message="assembly_uploader %(version)s")
+@click.option(
+    "--study",
+    required=True,
+    help="Raw reads study ID (used as a label for the upload directory)"
+)
+@click.option(
+    "--data",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample"
+)
+@click.option(
+    "--assembly_study",
+    required=False,
+    help="Pre-existing study ID to submit to if available. Must exist in the webin account."
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Overwrite all existing manifests"
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True, writable=True),
+    required=False,
+    help="Path to output directory"
+)
+@click.option(
+    "--private",
+    is_flag=True,
+    default=False,
+    help="Use flag if private"
+)
+@click.option(
+    "--tpa",
+    is_flag=True,
+    default=False,
+    help="Use this flag if the study is a third-party assembly. Default: False"
+)
+def main(study, assembly_study, data, force, private, tpa):
 
     gen_manifest = AssemblyManifestGenerator(
-        study=args.study,
-        assembly_study=args.assembly_study,
-        assemblies_csv=args.data,
-        force=args.force,
-        private=args.private,
-        tpa=args.tpa,
+        study=study,
+        assembly_study=assembly_study,
+        assemblies_csv=data,
+        force=force,
+        private=private,
+        tpa=tpa,
     )
     gen_manifest.write_manifests()
     logging.info("Completed")
