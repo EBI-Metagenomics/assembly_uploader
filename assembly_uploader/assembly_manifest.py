@@ -230,7 +230,7 @@ def main(study, assembly_study, data, force, private, tpa, output_dir):
         force=force,
         private=private,
         tpa=tpa,
-        output_dir=output_dir
+        output_dir=output_dir,
     )
     gen_manifest.write_manifests()
     logging.info("Completed")
