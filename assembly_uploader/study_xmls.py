@@ -19,6 +19,7 @@ import sys
 import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
 from datetime import datetime
+import hashlib
 from pathlib import Path
 
 from .ena_queries import EnaQuery
@@ -62,6 +63,11 @@ def parse_args(argv):
         help="use flag if private",
         required=False,
         default=False,
+        action="store_true",
+    )
+    parser.add_argument(
+        "--test",
+        help="use flag if testing against test ENA server",
         action="store_true",
     )
     return parser.parse_args(argv)
@@ -138,6 +144,9 @@ class StudyXMLGenerator:
         self._abstract = abstract
 
         project_alias = self.study_obj["study_accession"] + "_assembly"
+        if self.test:
+            hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
+            project_alias += f"_{hash_part}"
         with open(self.study_xml_path, "wb") as study_file:
             project_set = ET.Element("PROJECT_SET")
             project = ET.SubElement(project_set, "PROJECT")
@@ -223,6 +232,7 @@ def main():
         output_dir=Path(args.output_dir) if args.output_dir else None,
         publication=args.publication,
         private=args.private,
+        test=args.test,
     )
     study_reg.write_study_xml()
     study_reg.write_submission_xml()
