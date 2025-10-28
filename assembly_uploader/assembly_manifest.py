@@ -14,13 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
-import importlib.metadata
 import csv
 import hashlib
+import importlib.metadata
 import logging
 import os
 from pathlib import Path
+
+import click
 
 from .ena_queries import EnaQuery
 
@@ -185,49 +186,42 @@ class AssemblyManifestGenerator:
     # alias for convenience
     write = write_manifests
 
+
 @click.command(help="Generate manifests for assembly uploads")
 @click.version_option(__version__, message="assembly_uploader %(version)s")
 @click.option(
     "--study",
     required=True,
-    help="Raw reads study ID (used as a label for the upload directory)"
+    help="Raw reads study ID (used as a label for the upload directory)",
 )
 @click.option(
     "--data",
     type=click.Path(exists=True, dir_okay=False),
     required=False,
-    help="Metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample"
+    help="Metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample",
 )
 @click.option(
     "--assembly_study",
     required=False,
-    help="Pre-existing study ID to submit to if available. Must exist in the webin account."
+    help="Pre-existing study ID to submit to if available. Must exist in the webin account.",
 )
 @click.option(
-    "--force",
-    is_flag=True,
-    default=False,
-    help="Overwrite all existing manifests"
+    "--force", is_flag=True, default=False, help="Overwrite all existing manifests"
 )
 @click.option(
     "--output-dir",
     type=click.Path(file_okay=False, dir_okay=True, writable=True),
     required=False,
-    help="Path to output directory"
+    help="Path to output directory",
 )
-@click.option(
-    "--private",
-    is_flag=True,
-    default=False,
-    help="Use flag if private"
-)
+@click.option("--private", is_flag=True, default=False, help="Use flag if private")
 @click.option(
     "--tpa",
     is_flag=True,
     default=False,
-    help="Use this flag if the study is a third-party assembly. Default: False"
+    help="Use this flag if the study is a third-party assembly. Default: False",
 )
-def main(study, assembly_study, data, force, private, tpa):
+def main(study, assembly_study, data, force, private, tpa, output_dir):
 
     gen_manifest = AssemblyManifestGenerator(
         study=study,
@@ -236,6 +230,7 @@ def main(study, assembly_study, data, force, private, tpa):
         force=force,
         private=private,
         tpa=tpa,
+        output_dir=output_dir
     )
     gen_manifest.write_manifests()
     logging.info("Completed")

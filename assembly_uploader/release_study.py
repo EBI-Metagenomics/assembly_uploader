@@ -1,4 +1,3 @@
-import click
 import importlib.metadata
 import logging
 import tempfile
@@ -6,6 +5,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.dom import minidom
 
+import click
 import requests
 
 from assembly_uploader.submit_study import DROPBOX_DEV, DROPBOX_PROD
@@ -56,26 +56,21 @@ def release_study(accession: str, is_test: bool = False, xml_path: Path = None):
             raise StudyReleaseError(f"Failed to release {accession}. {receipt_xml_str}")
 
 
-@click.command(help="Release a private/held study on ENA, e.g. an uploaded assembly study")
-@click.version_option(__version__, message="assembly_uploader %(version)s")
-@click.option(
-    "--study",
-    required=True,
-    help="Study ID"
+@click.command(
+    help="Release a private/held study on ENA, e.g. an uploaded assembly study"
 )
+@click.version_option(__version__, message="assembly_uploader %(version)s")
+@click.option("--study", required=True, help="Study ID")
 @click.option(
-    "--xml_path",
-    required=False,
-    help="Path to use for the release XML submission"
+    "--xml_path", required=False, help="Path to use for the release XML submission"
 )
 @click.option(
     "--test",
     required=False,
     default=False,
     help="Use Webin Dev dropbox instead of prod",
-    is_flag=True
+    is_flag=True,
 )
-
 def main(study, test, xml_path):
 
     ensure_webin_credentials_exist()

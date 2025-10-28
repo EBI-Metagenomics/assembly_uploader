@@ -14,15 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import importlib.metadata
 import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
-from .ena_queries import EnaQuery
+import click
 
+from .ena_queries import EnaQuery
 
 METAGENOME = "metagenome"
 METATRANSCRIPTOME = "metatranscriptome"
@@ -183,40 +183,34 @@ class StudyXMLGenerator:
     "--library",
     type=click.Choice(["metagenome", "metatranscriptome"], case_sensitive=False),
     required=True,
-    help="Library type"
+    help="Library type",
 )
 @click.option("--center", required=True, help="Center for upload e.g. EMG")
 @click.option(
     "--hold",
     required=False,
     help="Hold date (private) in format dd-mm-yyyy. "
-         "Will inherit the release date of the raw read study if not provided."
+    "Will inherit the release date of the raw read study if not provided.",
 )
 @click.option(
     "--tpa",
     is_flag=True,
     default=False,
-    help="Use this flag if the study is a third-party assembly. Default: False"
+    help="Use this flag if the study is a third-party assembly. Default: False",
 )
 @click.option(
     "--publication",
     type=int,
     required=False,
-    help="PubMed ID for connected publication if available"
+    help="PubMed ID for connected publication if available",
 )
 @click.option(
     "--output-dir",
     type=click.Path(file_okay=False, dir_okay=True, writable=True),
     required=False,
-    help="Path to output directory"
+    help="Path to output directory",
 )
-@click.option(
-    "--private",
-    is_flag=True,
-    default=False,
-    help="Use flag if private"
-)
-
+@click.option("--private", is_flag=True, default=False, help="Use flag if private")
 def main(study, library, center, hold, tpa, publication, output_dir, private):
     click.echo(f"Study: {study}")
     click.echo(f"Library: {library}")

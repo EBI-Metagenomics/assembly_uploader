@@ -14,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import importlib.metadata
 import logging
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-import requests
 
+import click
+import requests
 
 __version__ = importlib.metadata.version("assembly_uploader")
 
@@ -106,24 +106,15 @@ def submit_study(study_id: str, is_test: bool = False, directory: Path = None):
 
 @click.command(help="Study submission")
 @click.version_option(__version__, message="assembly_uploader %(version)s")
-@click.option(
-    "--study",
-    required=True,
-    help="raw reads study ID"
-)
-@click.option(
-    "--directory",
-    required=True,
-    help="directory containing study XML"
-)
+@click.option("--study", required=True, help="raw reads study ID")
+@click.option("--directory", required=True, help="directory containing study XML")
 @click.option(
     "--test",
     required=False,
     help="run test submission only",
     default=False,
-    is_flag=True
+    is_flag=True,
 )
-
 def main(study, test, directory):
 
     ensure_webin_credentials_exist()
