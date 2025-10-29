@@ -14,12 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
-import sys
+import importlib.metadata
 import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
+
+import click
 
 from .ena_queries import EnaQuery
 
@@ -27,44 +28,7 @@ METAGENOME = "metagenome"
 METATRANSCRIPTOME = "metatranscriptome"
 
 
-def parse_args(argv):
-    parser = argparse.ArgumentParser(description="Study XML generation")
-    parser.add_argument("--study", help="raw reads study ID", required=True)
-    parser.add_argument(
-        "--library",
-        help="Library ",
-        choices=["metagenome", "metatranscriptome"],
-        required=True,
-    )
-    parser.add_argument("--center", help="center for upload e.g. EMG", required=True)
-    parser.add_argument(
-        "--hold",
-        help="hold date (private) if it should be different from the provided study in "
-        "format dd-mm-yyyy. Will inherit the release date of the raw read study if not "
-        "provided.",
-        required=False,
-    )
-    parser.add_argument(
-        "--tpa",
-        help="use this flag if the study a third party assembly. Default False",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--publication",
-        help="pubmed ID for connected publication if available",
-        type=int,
-        required=False,
-    )
-    parser.add_argument("--output-dir", help="Path to output directory", required=False)
-    parser.add_argument(
-        "--private",
-        help="use flag if private",
-        required=False,
-        default=False,
-        action="store_true",
-    )
-    return parser.parse_args(argv)
+__version__ = importlib.metadata.version("assembly_uploader")
 
 
 class StudyXMLGenerator:
@@ -212,17 +176,60 @@ class StudyXMLGenerator:
         self.write_submission_xml()
 
 
-def main():
-    args = parse_args(sys.argv[1:])
+@click.command(help="Study XML generation")
+@click.version_option(__version__, message="assembly_uploader %(version)s")
+@click.option("--study", required=True, help="Raw reads study ID")
+@click.option(
+    "--library",
+    type=click.Choice(["metagenome", "metatranscriptome"], case_sensitive=False),
+    required=True,
+    help="Library type",
+)
+@click.option("--center", required=True, help="Center for upload e.g. EMG")
+@click.option(
+    "--hold",
+    required=False,
+    help="Hold date (private) in format dd-mm-yyyy. "
+    "Will inherit the release date of the raw read study if not provided.",
+)
+@click.option(
+    "--tpa",
+    is_flag=True,
+    default=False,
+    help="Use this flag if the study is a third-party assembly. Default: False",
+)
+@click.option(
+    "--publication",
+    type=int,
+    required=False,
+    help="PubMed ID for connected publication if available",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True, writable=True),
+    required=False,
+    help="Path to output directory",
+)
+@click.option("--private", is_flag=True, default=False, help="Use flag if private")
+def main(study, library, center, hold, tpa, publication, output_dir, private):
+    click.echo(f"Study: {study}")
+    click.echo(f"Library: {library}")
+    click.echo(f"Center: {center}")
+    click.echo(f"Hold: {hold}")
+    click.echo(f"TPA: {tpa}")
+    click.echo(f"Publication: {publication}")
+    click.echo(f"Output dir: {output_dir}")
+    click.echo(f"Private: {private}")
+
     study_reg = StudyXMLGenerator(
-        study=args.study,
-        center_name=args.center,
-        library=args.library,
-        hold_date=args.hold,
-        tpa=args.tpa,
-        output_dir=Path(args.output_dir) if args.output_dir else None,
-        publication=args.publication,
-        private=args.private,
+        study=study,
+        center_name=center,
+        library=library,
+        hold_date=hold,
+        tpa=tpa,
+        output_dir=Path(output_dir) if output_dir else None,
+        publication=publication,
+        private=private,
     )
     study_reg.write_study_xml()
     study_reg.write_submission_xml()
