@@ -15,11 +15,11 @@
 # limitations under the License.
 
 import argparse
+import hashlib
 import sys
 import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
 from datetime import datetime
-import hashlib
 from pathlib import Path
 
 from .ena_queries import EnaQuery
@@ -84,6 +84,7 @@ class StudyXMLGenerator:
         output_dir: Path = None,
         publication: int = None,
         private: bool = False,
+        test: bool = False,
     ):
         f"""
         Build submission files for an assembly study.
@@ -118,6 +119,7 @@ class StudyXMLGenerator:
         self.tpa = tpa
         self.publication = publication
         self.private = private
+        self.test = test
 
         ena_query = EnaQuery(self.study, self.private)
         self.study_obj = ena_query.build_query()
