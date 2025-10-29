@@ -14,17 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 import csv
 import hashlib
+import importlib.metadata
 import logging
 import os
-import sys
+from datetime import datetime
 from pathlib import Path
+
+import click
 
 from .ena_queries import EnaQuery
 
 logging.basicConfig(level=logging.INFO)
+
+__version__ = importlib.metadata.version("assembly_uploader")
 
 
 def parse_info(data_file):
@@ -41,45 +45,6 @@ def get_md5(path_to_file):
     return md5_hash.hexdigest()
 
 
-def parse_args(argv):
-    parser = argparse.ArgumentParser(
-        description="Generate manifests for assembly uploads"
-    )
-    # --study only used to name the upload directory, treat this arg as a label
-    parser.add_argument("--study", help="raw reads study ID", required=True)
-    parser.add_argument(
-        "--data",
-        help="metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample",
-    )
-    parser.add_argument(
-        "--assembly_study",
-        help="pre-existing study ID to submit to if available. "
-        "Must exist in the webin account",
-        required=False,
-    )
-    parser.add_argument(
-        "--force",
-        help="overwrite all existing manifests",
-        required=False,
-        action="store_true",
-    )
-    parser.add_argument("--output-dir", help="Path to output directory", required=False)
-    parser.add_argument(
-        "--private",
-        help="use flag if private",
-        required=False,
-        default=False,
-        action="store_true",
-    )
-    parser.add_argument(
-        "--tpa",
-        help="use this flag if the study is a third party assembly. Default False",
-        action="store_true",
-        default=False,
-    )
-    return parser.parse_args(argv)
-
-
 class AssemblyManifestGenerator:
     def __init__(
         self,
@@ -90,6 +55,7 @@ class AssemblyManifestGenerator:
         force: bool = False,
         private: bool = False,
         tpa: bool = False,
+        test: bool = False,
     ):
         """
         Create an assembly manifest file for uploading assemblies detailed in assemblies_csv into the assembly_study.
@@ -113,6 +79,7 @@ class AssemblyManifestGenerator:
         self.force = force
         self.private = private
         self.tpa = tpa
+        self.test = test
 
     def generate_manifest(
         self,
@@ -157,6 +124,10 @@ class AssemblyManifestGenerator:
         #   collect variables
         assembly_md5 = get_md5(assembly_path)
         assembly_alias = f"{runs[0]}{'_others' if len(runs) > 1 else ''}_{assembly_md5}"
+        if self.test:
+            # add timestamp to be able to test multiple submissions during the same day
+            hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
+            assembly_alias += f"_{hash_part}"
         assembler = f"{assembler} v{assembler_version}"
         manifest_path = Path(self.upload_dir) / f"{assembly_md5}.manifest"
         #   skip existing manifests
@@ -223,16 +194,57 @@ class AssemblyManifestGenerator:
     write = write_manifests
 
 
-def main():
-    args = parse_args(sys.argv[1:])
+@click.command(help="Generate manifests for assembly uploads")
+@click.version_option(__version__, message="assembly_uploader %(version)s")
+@click.option(
+    "--study",
+    required=True,
+    help="Raw reads study ID (used as a label for the upload directory)",
+)
+@click.option(
+    "--data",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="Metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample",
+)
+@click.option(
+    "--assembly_study",
+    required=False,
+    help="Pre-existing study ID to submit to if available. Must exist in the webin account.",
+)
+@click.option(
+    "--force", is_flag=True, default=False, help="Overwrite all existing manifests"
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True, writable=True),
+    required=False,
+    help="Path to output directory",
+)
+@click.option("--private", is_flag=True, default=False, help="Use flag if private")
+@click.option(
+    "--tpa",
+    is_flag=True,
+    default=False,
+    help="Use this flag if the study is a third-party assembly. Default: False",
+)
+@click.option(
+    "--test",
+    is_flag=True,
+    default=False,
+    help="Use flag for using TEST ENA server (it will also add timestamp to assembly alias)",
+)
+def main(study, assembly_study, data, force, private, tpa, output_dir, test):
 
     gen_manifest = AssemblyManifestGenerator(
-        study=args.study,
-        assembly_study=args.assembly_study,
-        assemblies_csv=args.data,
-        force=args.force,
-        private=args.private,
-        tpa=args.tpa,
+        study=study,
+        assembly_study=assembly_study,
+        assemblies_csv=data,
+        force=force,
+        private=private,
+        tpa=tpa,
+        output_dir=output_dir,
+        test=test,
     )
     gen_manifest.write_manifests()
     logging.info("Completed")
