@@ -66,7 +66,7 @@ def test_study_xmls_test(tmp_path, study_reg_xml_content, study_submission_xml_c
         publication=1234,
         tpa=True,
         output_dir=tmp_path,
-        test=True
+        test=True,
     )
     assert ena_api.call_count == 1
 
@@ -81,6 +81,7 @@ def test_study_xmls_test(tmp_path, study_reg_xml_content, study_submission_xml_c
 
     with study_reg.study_xml_path.open() as f:
         content = f.readlines()
+    # study alias should have _hash in the end in test mode
     assert content != study_reg_xml_content
     assert "PRJEB41657_assembly_" in content[2]
 

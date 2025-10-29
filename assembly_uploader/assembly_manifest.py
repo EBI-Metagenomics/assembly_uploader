@@ -14,14 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 import csv
-from datetime import datetime
 import hashlib
 import importlib.metadata
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
+
+import click
 
 from .ena_queries import EnaQuery
 
@@ -126,6 +127,7 @@ class AssemblyManifestGenerator:
         if self.test:
             # add timestamp to be able to test multiple submissions during the same day
             hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
+            assembly_alias += f"_{hash_part}"
         assembler = f"{assembler} v{assembler_version}"
         manifest_path = Path(self.upload_dir) / f"{assembly_md5}.manifest"
         #   skip existing manifests
