@@ -217,8 +217,13 @@ class StudyXMLGenerator:
     help="Path to output directory",
 )
 @click.option("--private", is_flag=True, default=False, help="Use flag if private")
-@click.option("--test", is_flag=True, default=False, help="Use flag if testing against test ENA server")
-def main(study, library, center, hold, tpa, publication, output_dir, private):
+@click.option(
+    "--test",
+    is_flag=True,
+    default=False,
+    help="Use flag if testing against test ENA server",
+)
+def main(study, library, center, hold, tpa, publication, output_dir, private, test):
     click.echo(f"Study: {study}")
     click.echo(f"Library: {library}")
     click.echo(f"Center: {center}")
@@ -227,6 +232,7 @@ def main(study, library, center, hold, tpa, publication, output_dir, private):
     click.echo(f"Publication: {publication}")
     click.echo(f"Output dir: {output_dir}")
     click.echo(f"Private: {private}")
+    click.echo(f"Test: {private}")
 
     study_reg = StudyXMLGenerator(
         study=study,
@@ -237,7 +243,7 @@ def main(study, library, center, hold, tpa, publication, output_dir, private):
         output_dir=Path(output_dir) if output_dir else None,
         publication=publication,
         private=private,
-        test=test
+        test=test,
     )
     study_reg.write_study_xml()
     study_reg.write_submission_xml()
