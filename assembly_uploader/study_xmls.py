@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hashlib
 import importlib.metadata
 import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
@@ -42,6 +43,7 @@ class StudyXMLGenerator:
         output_dir: Path = None,
         publication: int = None,
         private: bool = False,
+        test: bool = False,
     ):
         f"""
         Build submission files for an assembly study.
@@ -76,6 +78,7 @@ class StudyXMLGenerator:
         self.tpa = tpa
         self.publication = publication
         self.private = private
+        self.test = test
 
         ena_query = EnaQuery(self.study, self.private)
         self.study_obj = ena_query.build_query()
@@ -102,6 +105,9 @@ class StudyXMLGenerator:
         self._abstract = abstract
 
         project_alias = self.study_obj["study_accession"] + "_assembly"
+        if self.test:
+            hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
+            project_alias += f"_{hash_part}"
         with open(self.study_xml_path, "wb") as study_file:
             project_set = ET.Element("PROJECT_SET")
             project = ET.SubElement(project_set, "PROJECT")
@@ -211,7 +217,13 @@ class StudyXMLGenerator:
     help="Path to output directory",
 )
 @click.option("--private", is_flag=True, default=False, help="Use flag if private")
-def main(study, library, center, hold, tpa, publication, output_dir, private):
+@click.option(
+    "--test",
+    is_flag=True,
+    default=False,
+    help="Use flag if testing against test ENA server",
+)
+def main(study, library, center, hold, tpa, publication, output_dir, private, test):
     click.echo(f"Study: {study}")
     click.echo(f"Library: {library}")
     click.echo(f"Center: {center}")
@@ -220,6 +232,7 @@ def main(study, library, center, hold, tpa, publication, output_dir, private):
     click.echo(f"Publication: {publication}")
     click.echo(f"Output dir: {output_dir}")
     click.echo(f"Private: {private}")
+    click.echo(f"Test: {test}")
 
     study_reg = StudyXMLGenerator(
         study=study,
@@ -230,6 +243,7 @@ def main(study, library, center, hold, tpa, publication, output_dir, private):
         output_dir=Path(output_dir) if output_dir else None,
         publication=publication,
         private=private,
+        test=test,
     )
     study_reg.write_study_xml()
     study_reg.write_submission_xml()
