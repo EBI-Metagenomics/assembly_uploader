@@ -232,7 +232,7 @@ def main(study, library, center, hold, tpa, publication, output_dir, private, te
     click.echo(f"Publication: {publication}")
     click.echo(f"Output dir: {output_dir}")
     click.echo(f"Private: {private}")
-    click.echo(f"Test: {private}")
+    click.echo(f"Test: {test}")
 
     study_reg = StudyXMLGenerator(
         study=study,
