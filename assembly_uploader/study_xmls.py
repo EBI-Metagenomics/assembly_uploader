@@ -106,6 +106,7 @@ class StudyXMLGenerator:
 
         project_alias = self.study_obj["study_accession"] + "_assembly"
         if self.test:
+            # add timestamp to be able to test multiple submissions during the same day
             hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
             project_alias += f"_{hash_part}"
         with open(self.study_xml_path, "wb") as study_file:
@@ -221,7 +222,7 @@ class StudyXMLGenerator:
     "--test",
     is_flag=True,
     default=False,
-    help="Use flag if testing against test ENA server",
+    help="Use flag for using TEST ENA server (it will also add timestamp to study accession)",
 )
 def main(study, library, center, hold, tpa, publication, output_dir, private, test):
     click.echo(f"Study: {study}")

@@ -14,14 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import click
 import csv
+from datetime import datetime
 import hashlib
 import importlib.metadata
 import logging
 import os
 from pathlib import Path
-
-import click
 
 from .ena_queries import EnaQuery
 
@@ -54,6 +54,7 @@ class AssemblyManifestGenerator:
         force: bool = False,
         private: bool = False,
         tpa: bool = False,
+        test: bool = False,
     ):
         """
         Create an assembly manifest file for uploading assemblies detailed in assemblies_csv into the assembly_study.
@@ -77,6 +78,7 @@ class AssemblyManifestGenerator:
         self.force = force
         self.private = private
         self.tpa = tpa
+        self.test = test
 
     def generate_manifest(
         self,
@@ -121,6 +123,9 @@ class AssemblyManifestGenerator:
         #   collect variables
         assembly_md5 = get_md5(assembly_path)
         assembly_alias = f"{runs[0]}{'_others' if len(runs) > 1 else ''}_{assembly_md5}"
+        if self.test:
+            # add timestamp to be able to test multiple submissions during the same day
+            hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
         assembler = f"{assembler} v{assembler_version}"
         manifest_path = Path(self.upload_dir) / f"{assembly_md5}.manifest"
         #   skip existing manifests
@@ -221,7 +226,13 @@ class AssemblyManifestGenerator:
     default=False,
     help="Use this flag if the study is a third-party assembly. Default: False",
 )
-def main(study, assembly_study, data, force, private, tpa, output_dir):
+@click.option(
+    "--test",
+    is_flag=True,
+    default=False,
+    help="Use flag for using TEST ENA server (it will also add timestamp to assembly alias)",
+)
+def main(study, assembly_study, data, force, private, tpa, output_dir, test):
 
     gen_manifest = AssemblyManifestGenerator(
         study=study,
@@ -231,6 +242,7 @@ def main(study, assembly_study, data, force, private, tpa, output_dir):
         private=private,
         tpa=tpa,
         output_dir=output_dir,
+        test=test,
     )
     gen_manifest.write_manifests()
     logging.info("Completed")
