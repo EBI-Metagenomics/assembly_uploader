@@ -122,12 +122,16 @@ class AssemblyManifestGenerator:
             )
             return None
         #   collect variables
-        assembly_md5 = get_md5(assembly_path)
+        assembly_md5 = get_md5(assembly_path)[:12]
         assembly_alias = f"{runs[0]}{'_others' if len(runs) > 1 else ''}_{assembly_md5}"
         if self.test:
             # add timestamp to be able to test multiple submissions during the same day
             hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
             assembly_alias += f"_{hash_part}"
+        if len(assembly_alias) > 50:
+            raise ValueError(
+                f"Assembly alias {assembly_alias} is too long. ENA allows maximum 50 characters."
+            )
         assembler = f"{assembler} v{assembler_version}"
         manifest_path = Path(self.upload_dir) / f"{assembly_md5}.manifest"
         #   skip existing manifests
