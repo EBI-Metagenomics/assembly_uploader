@@ -26,9 +26,7 @@ def test_assembly_manifest(assemblies_metadata, tmp_path, run_manifest_content):
     )
     assembly_manifest_gen.write_manifests()
 
-    manifest_file = tmp_path / Path(
-        "ERP125469_upload/d41d8cd98f00.manifest"
-    )
+    manifest_file = tmp_path / Path("ERP125469_upload/d41d8cd98f00.manifest")
     assert manifest_file.exists()
 
     with manifest_file.open() as f:
@@ -57,9 +55,7 @@ def test_assembly_manifest_test(assemblies_metadata, tmp_path, run_manifest_cont
     )
     assembly_manifest_gen.write_manifests()
 
-    manifest_file = tmp_path / Path(
-        "ERP125469_upload/d41d8cd98f00.manifest"
-    )
+    manifest_file = tmp_path / Path("ERP125469_upload/d41d8cd98f00.manifest")
     assert manifest_file.exists()
 
     with manifest_file.open() as f:
