@@ -26,9 +26,7 @@ def test_assembly_manifest(assemblies_metadata, tmp_path, run_manifest_content):
     )
     assembly_manifest_gen.write_manifests()
 
-    manifest_file = tmp_path / Path(
-        "ERP125469_upload/d41d8cd98f00b204e9800998ecf8427e.manifest"
-    )
+    manifest_file = tmp_path / Path("ERP125469_upload/d41d8cd98f00.manifest")
     assert manifest_file.exists()
 
     with manifest_file.open() as f:
@@ -57,13 +55,11 @@ def test_assembly_manifest_test(assemblies_metadata, tmp_path, run_manifest_cont
     )
     assembly_manifest_gen.write_manifests()
 
-    manifest_file = tmp_path / Path(
-        "ERP125469_upload/d41d8cd98f00b204e9800998ecf8427e.manifest"
-    )
+    manifest_file = tmp_path / Path("ERP125469_upload/d41d8cd98f00.manifest")
     assert manifest_file.exists()
 
     with manifest_file.open() as f:
         content = f.readlines()
     # assembly alias should have _hash in the end in test mode
     assert content != run_manifest_content
-    assert "ERR4918394_d41d8cd98f00b204e9800998ecf8427e_" in content[3]
+    assert "ERR4918394_d41d8cd98f00_" in content[3]
