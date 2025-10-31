@@ -56,7 +56,7 @@ class StudyXMLGenerator:
         :param output_dir: path to output directory (default is CWD)
         :param publication: pubmed ID for connected publication if available
         :param private: is this a private study?
-        :param test: use test ENA server
+        :param test: submition will be done to the ENA TEST server
         :return: StudyXMLGenerator object
         """
         self.study = study
@@ -223,7 +223,7 @@ class StudyXMLGenerator:
     "--test",
     is_flag=True,
     default=False,
-    help="Use flag for using TEST ENA server (it will also add timestamp to study alias)",
+    help="Use flag when submitting to the ENA TEST server (adds a timestamp to the study alias)",
 )
 def main(study, library, center, hold, tpa, publication, output_dir, private, test):
     click.echo(f"Study: {study}")

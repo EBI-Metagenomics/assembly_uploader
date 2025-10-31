@@ -261,7 +261,7 @@ class AssemblyManifestGenerator:
     "--test",
     is_flag=True,
     default=False,
-    help="Use flag for using TEST ENA server (it will also add timestamp to assembly alias)",
+    help="Use flag when submitting to the ENA TEST server (adds a timestamp to the assembly alias)",
 )
 def main(study, assembly_study, data, force, private, tpa, output_dir, test):
 
