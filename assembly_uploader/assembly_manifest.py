@@ -45,6 +45,40 @@ def get_md5(path_to_file):
     return md5_hash.hexdigest()
 
 
+def create_assembly_alias(assembly_md5, runs, test=False):
+    """
+    Creates an alias for an assembly based on the MD5 of the FASTA file, runs,
+    and an optional test flag.
+
+    The alias consists of:
+    1. The first run accession; appends '_others' if multiple runs exist (co-assembly).
+    2. The first 12 characters of the MD5 hash of the assembly file for uniqueness.
+    3. If `test` is True, a timestamp-based MD5 hash (first 8 characters) is added
+        to make test submissions of the same day unique.
+    4. Raises a ValueError if the alias exceeds 50 characters to comply with ENA standards.
+
+    :param assembly_md5: The MD5 hash of the assembly FASTA file.
+    :param runs: A list of run accessions.
+    :param test: Flag indicating if the alias is for testing. Default is False.
+    :return: The constructed assembly alias.
+    :raises ValueError: If the alias exceeds 50 characters.
+    """
+    assembly_alias = (
+        f"{runs[0]}{'_others' if len(runs) > 1 else ''}_{assembly_md5[:12]}"
+    )
+
+    if test:
+        hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
+        assembly_alias += f"_{hash_part}"
+
+    if len(assembly_alias) > 50:
+        raise ValueError(
+            f"Assembly alias {assembly_alias} is too long. ENA allows maximum 50 characters."
+        )
+
+    return assembly_alias
+
+
 class AssemblyManifestGenerator:
     def __init__(
         self,
@@ -121,19 +155,10 @@ class AssemblyManifestGenerator:
                 f"{runs_str}."
             )
             return None
-        #   collect variables
-        assembly_md5 = get_md5(assembly_path)[:12]
-        assembly_alias = f"{runs[0]}{'_others' if len(runs) > 1 else ''}_{assembly_md5}"
-        if self.test:
-            # add timestamp to be able to test multiple submissions during the same day
-            hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
-            assembly_alias += f"_{hash_part}"
-        if len(assembly_alias) > 50:
-            raise ValueError(
-                f"Assembly alias {assembly_alias} is too long. ENA allows maximum 50 characters."
-            )
+        assembly_md5 = get_md5(assembly_path)
+        assembly_alias = create_assembly_alias(assembly_md5, runs, self.test)
         assembler = f"{assembler} v{assembler_version}"
-        manifest_path = Path(self.upload_dir) / f"{assembly_md5}.manifest"
+        manifest_path = Path(self.upload_dir) / f"{assembly_md5[:12]}.manifest"
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
