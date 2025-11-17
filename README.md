@@ -1,4 +1,4 @@
-# ENA Assembly uploader
+# ENA Metagenome Assembly uploader
 Upload of metagenome and metatranscriptome assemblies to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena)
 
 Pre-requisites:
@@ -49,10 +49,10 @@ study_xmls
 
 #### Step 2: submit the new assembly study to ENA
 
-This step submit the XML to ENA and generate a new assembly study accession. Keep note of the newly generated study accession.
+This step will submit the XML to ENA and generate a new assembly study accession identifier. Make sure to write down the newly generated study accession identifier!
 > [!NOTE]
-> 
-> We recommend to submit study to TEST server first using `--test` argument. If no errors occur then re-run command **without** `--test` for live submission.
+>
+> We recommend first submitting the study to the ENA's TEST server first using the `--test` argument. If no errors occur, then re-run the command **without** the `--test` argument for a live submission.
 
 ```bash
 submit_study
@@ -82,14 +82,15 @@ assembly_manifest
 
 #### Step 4: upload assemblies
 
-Once manifest files are generated, it is necessary to use ENA's [webin-cli](https://github.com/enasequence/webin-cli) resource to upload genomes.
+Once manifest files are generated, it is necessary to use ENA's [webin-cli](https://github.com/enasequence/webin-cli) resource to upload the metagenome assemblies.
+More information on ENA's webin-cli can be found [in the ENA docs](<https://ena-docs.readthedocs.io/en/latest/submit/general-guide/webin-cli.html>).
 
-We recommend to use a pre-installed [**webin_cli_handler**](https://github.com/EBI-Metagenomics/mgnify-pipelines-toolkit/blob/dev/mgnify_pipelines_toolkit/ena/webin_cli_handler.py) script.
+We recommend using a pre-installed [**webin_cli_handler**](https://github.com/EBI-Metagenomics/mgnify-pipelines-toolkit/blob/dev/mgnify_pipelines_toolkit/ena/webin_cli_handler.py) script.
 
 > [!NOTE]
-> 
-> First, validate your submission with `--mode validate`. \
-> Second, upload to TEST server using `--test` (make sure you have submitted a study to TEST server on Step 2). 
+>
+> First, validate your submission with the `--mode validate`. \
+> Second, upload to the ENA's TEST server using the `--test` flag (make sure you have submitted the study to the ENA's TEST server on Step 2).
 
 Run live execution:
 
@@ -100,12 +101,12 @@ webin_cli_handler \
   --mode submit \
   [--test]
 ```
-If you do not have ena-webin-cli installed add `--download-webin-cli`. \
+If you do not have ena-webin-cli installed add the `--download-webin-cli` flag. The tool will be automatically downloaded. It requires a recent JAVA version to be able to work following [official repo](https://github.com/enasequence/webin-cli). \
 If you want to use local Java .jar provide it with `--webin-cli-jar`.
 
 Other options:
 ```bash
-webin_cli_handler 
+webin_cli_handler
 
   -h, --help            show this help message and exit
   -m, --manifest MANIFEST
@@ -138,8 +139,6 @@ release_study
   --study STUDY         study ID (e.g. of the assembly study)
   --test                run test submission only
 ```
-
-More information on ENA's webin-cli can be found [in the ENA docs](<https://ena-docs.readthedocs.io/en/latest/submit/general-guide/webin-cli.html>).
 
 ### From a Python script
 This `assembly_uploader` can also be used a Python library, so that you can integrate the steps into another Python workflow or tool.

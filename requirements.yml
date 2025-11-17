@@ -3,5 +3,5 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - ena-webin-cli
-  - mgnify-pipelines-toolkit
+  - ena-webin-cli>=9.0.1
+  - mgnify-pipelines-toolkit>=1.4.5
