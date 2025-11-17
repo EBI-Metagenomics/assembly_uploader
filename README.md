@@ -91,7 +91,7 @@ We recommend to use a pre-installed [**webin_cli_handler**](https://github.com/E
 > First, validate your submission with `--mode validate`. \
 > Second, upload to TEST server using `--test` (make sure you have submitted a study to TEST server on Step 2). 
 
-Run live execution example:
+Run live execution:
 
 ```bash
 webin_cli_handler \
