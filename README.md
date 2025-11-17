@@ -49,7 +49,10 @@ study_xmls
 
 #### Step 2: submit the new assembly study to ENA
 
-This step submit the XML to ENA and generate a new assembly study accession. Keep note of the newly generated study accession:
+This step submit the XML to ENA and generate a new assembly study accession. Keep note of the newly generated study accession.
+> [!NOTE]
+> 
+> We recommend to submit study to TEST server first using `--test` argument. If no errors occur then re-run command **without** `--test` for live submission.
 
 ```bash
 submit_study
@@ -79,18 +82,54 @@ assembly_manifest
 
 #### Step 4: upload assemblies
 
-Once manifest files are generated, it is necessary to use ENA's webin-cli resource to upload genomes.
+Once manifest files are generated, it is necessary to use ENA's [webin-cli](https://github.com/enasequence/webin-cli) resource to upload genomes.
 
-To test your submission add the `-test` argument.
+We recommend to use a pre-installed [**webin_cli_handler**](https://github.com/EBI-Metagenomics/mgnify-pipelines-toolkit/blob/dev/mgnify_pipelines_toolkit/ena/webin_cli_handler.py) script.
 
-A live execution example within this repo is the following:
+> [!NOTE]
+> 
+> First, validate your submission with `--mode validate`. \
+> Second, upload to TEST server using `--test` (make sure you have submitted a study to TEST server in Step 2). \
+
+Run live execution example:
+
 ```bash
-ena-webin-cli \
-  -context=genome \
-  -manifest=SRR12240187.manifest \
-  -userName=$ENA_WEBIN \
-  -password=$ENA_WEBIN_PASSWORD \
-  -submit
+webin_cli_handler \
+  --manifest *.manifest \
+  --context genome \
+  --mode submit \
+  [--test]
+```
+If you do not have ena-webin-cli installed add `--download-webin-cli`. \
+If you want to use local Java .jar provide it with `--webin-cli-jar`.
+
+Other options:
+```bash
+webin_cli_handler 
+
+  -h, --help            show this help message and exit
+  -m, --manifest MANIFEST
+                        Manifest text file containing file and metadata fields
+  -c, --context {genome,transcriptome,sequence,polysample,reads,taxrefset}
+                        Submission type: genome, transcriptome, sequence, polysample, reads, taxrefset
+  --mode {submit,validate}
+                        submit or validate
+  --test                Specify to use test server instead of live
+  --workdir WORKDIR     Path to working directory
+  --download-webin-cli  Specify if you do not have ena-webin-cli installed
+  --download-webin-cli-directory DOWNLOAD_WEBIN_CLI_DIRECTORY
+                        Path to save webin-cli into
+  --download-webin-cli-version DOWNLOAD_WEBIN_CLI_VERSION
+                        Version of ena-webin-cli to download, default: latest
+  --webin-cli-jar WEBIN_CLI_JAR
+                        Path to pre-downloaded webin-cli.jar file to execute
+  --retries RETRIES     Number of retry attempts (default: 3)
+  --retry-delay RETRY_DELAY
+                        Initial retry delay in seconds (default: 5)
+  --java-heap-size-initial JAVA_HEAP_SIZE_INITIAL
+                        Java initial heap size in GB (default: 10)
+  --java-heap-size-max JAVA_HEAP_SIZE_MAX
+                        Java maximum heap size in GB (default: 10)
 ```
 
 #### Optional step 5: publicly releasing a private study

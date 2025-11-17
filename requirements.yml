@@ -4,3 +4,4 @@ channels:
   - defaults
 dependencies:
   - ena-webin-cli
+  - mgnify-pipelines-toolkit
