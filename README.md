@@ -89,7 +89,7 @@ We recommend to use a pre-installed [**webin_cli_handler**](https://github.com/E
 > [!NOTE]
 > 
 > First, validate your submission with `--mode validate`. \
-> Second, upload to TEST server using `--test` (make sure you have submitted a study to TEST server in Step 2). \
+> Second, upload to TEST server using `--test` (make sure you have submitted a study to TEST server on Step 2). 
 
 Run live execution example:
 
