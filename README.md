@@ -19,11 +19,19 @@ export ENA_WEBIN_PASSWORD=password
 
 ## Installation
 
-Install the package:
+### Installation with conda (recommended)
+
+```bash
+conda install bioconda::assembly-uploader
+```
+
+### Installation with pip 
 
 ```bash
 pip install assembly-uploader
 ```
+Additionally, you need to download [the webin-cli.jar](https://github.com/enasequence/webin-cli) from the [latest release](https://github.com/enasequence/webin-cli/releases). 
+
 
 ## Usage
 ### From the command line
