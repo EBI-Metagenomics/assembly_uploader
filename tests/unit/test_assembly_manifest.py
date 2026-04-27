@@ -5,7 +5,7 @@ import responses
 from assembly_uploader.assembly_manifest import AssemblyManifestGenerator
 
 
-def test_assembly_manifest(assemblies_metadata, tmp_path, run_manifest_content):
+def test_assembly_manifest(assemblies_metadata_csv, tmp_path, run_manifest_content):
     responses.add(
         responses.POST,
         "https://www.ebi.ac.uk/ena/portal/api/search",
@@ -20,7 +20,7 @@ def test_assembly_manifest(assemblies_metadata, tmp_path, run_manifest_content):
     assembly_manifest_gen = AssemblyManifestGenerator(
         study="ERP125469",
         assembly_study="PRJ1",
-        assemblies_csv=assemblies_metadata,
+        assemblies_table=assemblies_metadata_csv,
         output_dir=tmp_path,
         tpa=True,
     )
@@ -33,7 +33,9 @@ def test_assembly_manifest(assemblies_metadata, tmp_path, run_manifest_content):
         assert f.readlines() == run_manifest_content
 
 
-def test_assembly_manifest_test(assemblies_metadata, tmp_path, run_manifest_content):
+def test_assembly_manifest_test(
+    assemblies_metadata_tsv, tmp_path, run_manifest_content
+):
     responses.add(
         responses.POST,
         "https://www.ebi.ac.uk/ena/portal/api/search",
@@ -48,7 +50,8 @@ def test_assembly_manifest_test(assemblies_metadata, tmp_path, run_manifest_cont
     assembly_manifest_gen = AssemblyManifestGenerator(
         study="ERP125469",
         assembly_study="PRJ1",
-        assemblies_csv=assemblies_metadata,
+        assemblies_table=assemblies_metadata_tsv,
+        assemblies_table_delimiter="\t",
         output_dir=tmp_path,
         tpa=True,
         test=True,

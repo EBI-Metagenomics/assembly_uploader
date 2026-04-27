@@ -2,7 +2,7 @@
 Upload of metagenome and metatranscriptome assemblies to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena)
 
 Pre-requisites:
-- CSV metadata file. One per study. See `tests/fixtures/test_metadata` for an example
+- Metadata file. One per study. See `tests/fixtures/test_metadata` for an example
 - Compressed assembly fasta files in the locations defined in the metadata file
 
 Set the following environmental variables with your webin details:
@@ -25,12 +25,12 @@ export ENA_WEBIN_PASSWORD=password
 conda install bioconda::assembly-uploader
 ```
 
-### Installation with pip 
+### Installation with pip
 
 ```bash
 pip install assembly-uploader
 ```
-Additionally, you need to download [the webin-cli.jar](https://github.com/enasequence/webin-cli) from the [latest release](https://github.com/enasequence/webin-cli/releases). 
+Additionally, you need to download [the webin-cli.jar](https://github.com/enasequence/webin-cli) from the [latest release](https://github.com/enasequence/webin-cli/releases).
 
 
 ## Usage
@@ -80,7 +80,8 @@ This step will generate manifest files in the folder `<STUDY>_upload` for runs s
 ```bash
 assembly_manifest
   --study STUDY         raw reads study ID
-  --data DATA           metadata CSV - runs (comma-separated and in quotes, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath and optionally sample
+  --data DATA           metadata table - runs (comma-separated and in quotes, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath and optionally sample
+  --data-delimiter      DATA delimiter, default: comma
   --assembly_study ASSEMBLY_STUDY
                         pre-existing study ID to submit to if available. Must exist in the webin account
   --force               overwrite all existing manifests
@@ -173,7 +174,7 @@ print(f"My assembly study has the accession {new_study_accession}")
 
 # Create manifest files for the assemblies to be uploaded
 # This assumes you have a CSV file detailing the assemblies with their assembler and coverage metadata
-# see tests/fixtures/test_metadata for an example
+# see tests/fixtures/test_metadata.csv for an example
 AssemblyManifestGenerator(
     study="SRP272267",
     assembly_study=new_study_accession,
