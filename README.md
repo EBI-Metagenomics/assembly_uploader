@@ -80,7 +80,7 @@ This step will generate manifest files in the folder `<STUDY>_upload` for runs s
 ```bash
 assembly_manifest
   --study STUDY         raw reads study ID
-  --data DATA           metadata table - runs (comma-separated and in quotes, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath and optionally sample
+  --data DATA           metadata table - run(s) (comma-separated and in quotes for CSV input, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath and sample [optional]
   --data-delimiter      DATA delimiter, default: comma
   --assembly_study ASSEMBLY_STUDY
                         pre-existing study ID to submit to if available. Must exist in the webin account
