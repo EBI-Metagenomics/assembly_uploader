@@ -2,7 +2,7 @@
 Upload of metagenome and metatranscriptome assemblies to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena)
 
 Pre-requisites:
-- Metadata file. One per study. See `tests/fixtures/test_metadata` for an example
+- Metadata file. One per study. See `tests/fixtures/test_metadata.csv` for an example
 - Compressed assembly fasta files in the locations defined in the metadata file
 
 Set the following environmental variables with your webin details:
@@ -119,7 +119,9 @@ webin_cli_handler
 
   -h, --help            show this help message and exit
   -m, --manifest MANIFEST
-                        Manifest text file containing file and metadata fields
+                        Path to a single manifest file or a directory containing manifest files
+  -o, --output-accessions OUTPUT_ACCESSIONS
+                        File to write assigned accessions to (TSV, default: ena_accessions.tsv)
   -c, --context {genome,transcriptome,sequence,polysample,reads,taxrefset}
                         Submission type: genome, transcriptome, sequence, polysample, reads, taxrefset
   --mode {submit,validate}
@@ -133,13 +135,14 @@ webin_cli_handler
                         Version of ena-webin-cli to download, default: latest
   --webin-cli-jar WEBIN_CLI_JAR
                         Path to pre-downloaded webin-cli.jar file to execute
-  --retries RETRIES     Number of retry attempts (default: 3)
+  --retries RETRIES     Number of retry attempts (must be >= 1, default: 3)
   --retry-delay RETRY_DELAY
-                        Initial retry delay in seconds (default: 5)
+                        Initial retry delay in seconds (must be >= 0, default: 5)
   --java-heap-size-initial JAVA_HEAP_SIZE_INITIAL
-                        Java initial heap size in GB (default: 10)
+                        Java initial heap size in GB (-Xms); only added when explicitly provided
   --java-heap-size-max JAVA_HEAP_SIZE_MAX
-                        Java maximum heap size in GB (default: 10)
+                        Java maximum heap size in GB (-Xmx); only added when explicitly provided
+
 ```
 
 #### Optional step 5: publicly releasing a private study

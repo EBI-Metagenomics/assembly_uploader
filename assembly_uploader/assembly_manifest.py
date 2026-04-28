@@ -32,9 +32,8 @@ __version__ = importlib.metadata.version("assembly_uploader")
 
 
 def parse_info(data_file, data_file_delimiter):
-    csvfile = open(data_file, newline="")
-    csvdict = csv.DictReader(csvfile, delimiter=data_file_delimiter)
-    return csvdict
+    with open(data_file, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f, delimiter=data_file_delimiter))
 
 
 def get_md5(path_to_file):
@@ -93,7 +92,7 @@ class AssemblyManifestGenerator:
         test: bool = False,
     ):
         """
-        Create an assembly manifest file for uploading assemblies detailed in assemblies_csv into the assembly_study.
+        Create an assembly manifest file for uploading assemblies detailed in assemblies_table into the assembly_study.
         :param study: study accession of the raw reads study
         :param assembly_study: study accession of the assembly study (e.g. created by Study XMLs)
         :param assemblies_table: path to assemblies file, listing runs, coverage, assembler, version, filepath of each assembly
@@ -207,7 +206,7 @@ class AssemblyManifestGenerator:
             else:
                 logging.error(
                     f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. "
-                    f"Please specify a sample accession in the 'Sample' column of your CSV to resolve this. Skipping."
+                    f"Please specify a sample accession in the 'Sample' column of your table to resolve this. Skipping."
                 )
                 continue
 

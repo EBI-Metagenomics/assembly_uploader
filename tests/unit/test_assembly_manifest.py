@@ -21,6 +21,7 @@ def test_assembly_manifest(assemblies_metadata_csv, tmp_path, run_manifest_conte
         study="ERP125469",
         assembly_study="PRJ1",
         assemblies_table=assemblies_metadata_csv,
+        assemblies_table_delimiter=",",
         output_dir=tmp_path,
         tpa=True,
     )
