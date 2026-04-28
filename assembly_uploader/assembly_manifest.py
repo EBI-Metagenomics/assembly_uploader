@@ -31,10 +31,9 @@ logging.basicConfig(level=logging.INFO)
 __version__ = importlib.metadata.version("assembly_uploader")
 
 
-def parse_info(data_file):
-    csvfile = open(data_file, newline="")
-    csvdict = csv.DictReader(csvfile)
-    return csvdict
+def parse_info(data_file, data_file_delimiter):
+    with open(data_file, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f, delimiter=data_file_delimiter))
 
 
 def get_md5(path_to_file):
@@ -84,7 +83,8 @@ class AssemblyManifestGenerator:
         self,
         study: str,  # only used to name the upload directory
         assembly_study: str,
-        assemblies_csv: Path,
+        assemblies_table: Path,
+        assemblies_table_delimiter: str,
         output_dir: Path = None,
         force: bool = False,
         private: bool = False,
@@ -92,11 +92,12 @@ class AssemblyManifestGenerator:
         test: bool = False,
     ):
         """
-        Create an assembly manifest file for uploading assemblies detailed in assemblies_csv into the assembly_study.
+        Create an assembly manifest file for uploading assemblies detailed in assemblies_table into the assembly_study.
         :param study: study accession of the raw reads study
         :param assembly_study: study accession of the assembly study (e.g. created by Study XMLs)
-        :param assemblies_csv: path to assemblies CSV file, listing runs, coverage, assembler, version, filepath of each assembly
+        :param assemblies_table: path to assemblies file, listing runs, coverage, assembler, version, filepath of each assembly
                             Optionally, a 'Sample' column can be included to specify sample accession for co-assemblies
+        :param assemblies_table_delimiter: assembly table delimiter (default: comma)
         :param output_dir: path to output directory, otherwise CWD
         :param force: overwrite existing manifests
         :param private: is this a private study?
@@ -104,7 +105,7 @@ class AssemblyManifestGenerator:
 
         """
         self.study = study
-        self.metadata = parse_info(assemblies_csv)
+        self.metadata = parse_info(assemblies_table, assemblies_table_delimiter)
         self.new_project = assembly_study
 
         self.upload_dir = (output_dir or Path(".")) / Path(f"{self.study}_upload")
@@ -205,7 +206,7 @@ class AssemblyManifestGenerator:
             else:
                 logging.error(
                     f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. "
-                    f"Please specify a sample accession in the 'Sample' column of your CSV to resolve this. Skipping."
+                    f"Please specify a sample accession in the 'Sample' column of your table to resolve this. Skipping."
                 )
                 continue
 
@@ -234,7 +235,13 @@ class AssemblyManifestGenerator:
     "--data",
     type=click.Path(exists=True, dir_okay=False),
     required=False,
-    help="Metadata CSV - runs, coverage, assembler, version, filepath, and optionally sample",
+    help="Metadata TABLE - runs, coverage, assembler, version, filepath, and optionally sample",
+)
+@click.option(
+    "--data-delimiter",
+    required=False,
+    default=",",
+    help="Metadata table column delimiter (default: comma)",
 )
 @click.option(
     "--assembly_study",
@@ -263,12 +270,15 @@ class AssemblyManifestGenerator:
     default=False,
     help="Use flag when submitting to the ENA TEST server (adds a timestamp to the assembly alias)",
 )
-def main(study, assembly_study, data, force, private, tpa, output_dir, test):
+def main(
+    study, assembly_study, data, data_delimiter, force, private, tpa, output_dir, test
+):
 
     gen_manifest = AssemblyManifestGenerator(
         study=study,
         assembly_study=assembly_study,
-        assemblies_csv=data,
+        assemblies_table=data,
+        assemblies_table_delimiter=data_delimiter,
         force=force,
         private=private,
         tpa=tpa,

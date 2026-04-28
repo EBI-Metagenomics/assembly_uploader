@@ -31,8 +31,13 @@ def study_submission_xml_content(study_submission_xml):
 
 
 @pytest.fixture(scope="module")
-def assemblies_metadata():
-    return Path(__file__).resolve().parent / Path("fixtures/test_metadata")
+def assemblies_metadata_csv():
+    return Path(__file__).resolve().parent / Path("fixtures/test_metadata.csv")
+
+
+@pytest.fixture(scope="module")
+def assemblies_metadata_tsv():
+    return Path(__file__).resolve().parent / Path("fixtures/test_metadata.tsv")
 
 
 @pytest.fixture(scope="module")
