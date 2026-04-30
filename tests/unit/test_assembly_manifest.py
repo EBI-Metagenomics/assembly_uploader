@@ -65,5 +65,7 @@ def test_assembly_manifest_test(
     with manifest_file.open() as f:
         content = f.readlines()
     # assembly alias should have _hash in the end in test mode
+    # first TSV row is sample-only (no runs), so alias uses sample accession as prefix
+    # and RUN_REF is absent, so ASSEMBLYNAME is at index 2
     assert content != run_manifest_content
-    assert "ERR4918394_d41d8cd98f00_" in content[3]
+    assert "SAMEA7687881_d41d8cd98f00_" in content[2]

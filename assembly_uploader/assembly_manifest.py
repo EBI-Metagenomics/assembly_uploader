@@ -44,27 +44,32 @@ def get_md5(path_to_file):
     return md5_hash.hexdigest()
 
 
-def create_assembly_alias(assembly_md5, runs, test=False):
+def create_assembly_alias(assembly_md5, runs, test=False, sample=None):
     """
     Creates an alias for an assembly based on the MD5 of the FASTA file, runs,
     and an optional test flag.
 
     The alias consists of:
-    1. The first run accession; appends '_others' if multiple runs exist (co-assembly).
+    1. The first run accession (or sample accession when no runs); appends '_others' if multiple runs exist (co-assembly).
     2. The first 12 characters of the MD5 hash of the assembly file for uniqueness.
     3. If `test` is True, a timestamp-based MD5 hash (first 8 characters) is added
         to make test submissions of the same day unique.
     4. Raises a ValueError if the alias exceeds 50 characters to comply with ENA standards.
 
     :param assembly_md5: The MD5 hash of the assembly FASTA file.
-    :param runs: A list of run accessions.
+    :param runs: A list of run accessions (may be empty for sample-only submissions).
     :param test: Flag indicating if the alias is for testing. Default is False.
+    :param sample: Sample accession, used as prefix when runs is empty.
     :return: The constructed assembly alias.
-    :raises ValueError: If the alias exceeds 50 characters.
+    :raises ValueError: If runs and sample are both absent, or if the alias exceeds 50 characters.
     """
-    assembly_alias = (
-        f"{runs[0]}{'_others' if len(runs) > 1 else ''}_{assembly_md5[:12]}"
-    )
+    if runs:
+        prefix = f"{runs[0]}{'_others' if len(runs) > 1 else ''}"
+    elif sample:
+        prefix = sample
+    else:
+        raise ValueError("Either runs or sample must be provided for assembly alias.")
+    assembly_alias = f"{prefix}_{assembly_md5[:12]}"
 
     if test:
         hash_part = hashlib.md5(datetime.now().isoformat().encode()).hexdigest()[:8]
@@ -141,35 +146,39 @@ class AssemblyManifestGenerator:
 
         """
         runs_str = ",".join(runs)
+        message_str = f"sample {sample}"
+        if runs_str:
+            message_str += f" of run(s): {runs_str}"
 
-        logging.info(f"Writing manifest for {runs_str}")
+        logging.info(f"Writing manifest for {message_str}")
         #   sanity check assembly file provided
         if not assembly_path.exists():
             logging.error(
-                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {runs_str}"
+                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {message_str}"
             )
             return None
         valid_extensions = (".fa.gz", ".fna.gz", ".fasta.gz")
         if not str(assembly_path).endswith(valid_extensions):
             logging.error(
                 f"Assembly file {assembly_path} is either not fasta format or not compressed for run "
-                f"{runs_str}."
+                f"{message_str}."
             )
             return None
         assembly_md5 = get_md5(assembly_path)
-        assembly_alias = create_assembly_alias(assembly_md5, runs, self.test)
+        assembly_alias = create_assembly_alias(
+            assembly_md5, runs, self.test, sample=sample
+        )
         assembler = f"{assembler} v{assembler_version}"
         manifest_path = Path(self.upload_dir) / f"{assembly_md5[:12]}.manifest"
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
             logging.warning(
-                f"Manifest for {runs_str} already exists at {manifest_path}. Skipping"
+                f"Manifest for {message_str} already exists at {manifest_path}. Skipping"
             )
             return manifest_path
-        values = (
+        values = [
             ("STUDY", self.new_project),
             ("SAMPLE", sample),
-            ("RUN_REF", runs_str),
             ("ASSEMBLYNAME", assembly_alias),
             ("ASSEMBLY_TYPE", "primary metagenome"),
             ("COVERAGE", coverage),
@@ -177,8 +186,10 @@ class AssemblyManifestGenerator:
             ("PLATFORM", sequencer),
             ("FASTA", assembly_path),
             ("TPA", str(self.tpa).lower()),
-        )
-        logging.info("Writing manifest file (.manifest) for " + runs_str)
+        ]
+        if runs_str:
+            values.insert(2, ("RUN_REF", runs_str))
+        logging.info("Writing manifest file (.manifest) for " + message_str)
         with open(manifest_path, "w") as outfile:
             for k, v in values:
                 manifest = f"{k}\t{v}\n"
@@ -187,21 +198,27 @@ class AssemblyManifestGenerator:
 
     def write_manifests(self):
         for row in self.metadata:
-            # collect sample accessions and instrument models from runs
             sample_accessions = set()
             instruments = set()
-            for run in row["Runs"].split(","):
-                # TODO in theory private/non-private state can be different for runs in co-assembly
-                ena_query = EnaQuery(run, self.private)
-                ena_metadata = ena_query.build_query()
-                sample_accessions.add(ena_metadata["sample_accession"])
-                instruments.add(ena_metadata["instrument_model"])
+
+            if not row["Runs"] and not row.get("Sample"):
+                logging.error(
+                    "At least one of Runs or Sample is required for submission. Skipping."
+                )
+                continue
+
+            if row["Runs"]:
+                for run in row["Runs"].split(","):
+                    # TODO in theory private/non-private state can be different for runs in co-assembly
+                    ena_query = EnaQuery(run, self.private)
+                    ena_metadata = ena_query.build_query()
+                    sample_accessions.add(ena_metadata["sample_accession"])
+                    instruments.add(ena_metadata["instrument_model"])
 
             # only one sample accession can be used for the assembly
             if len(sample_accessions) == 1:
                 sample_accession = sample_accessions.pop()
             elif row.get("Sample"):
-                # Use the explicitly provided sample accession
                 sample_accession = row["Sample"]
             else:
                 logging.error(
@@ -210,10 +227,28 @@ class AssemblyManifestGenerator:
                 )
                 continue
 
+            # Determine platform: explicit column > derived from runs > queried from sample
+            platform = row.get("Platform") or ""
+            if not platform:
+                if instruments:
+                    platform = ",".join(instruments)
+                else:
+                    sample_query = EnaQuery(sample_accession, self.private)
+                    sample_data = sample_query.build_query() or {}
+                    platform = sample_data.get("instrument_model") or ""
+
+            if not platform:
+                logging.error(
+                    f"Could not determine platform for sample {sample_accession}. "
+                    f"Please add a 'Platform' column to your table. Skipping."
+                )
+                continue
+
+            runs_list = row["Runs"].split(",") if row["Runs"] else []
             self.generate_manifest(
-                row["Runs"].split(","),
+                runs_list,
                 sample_accession,
-                ",".join(instruments),
+                platform,
                 row["Coverage"],
                 row["Assembler"],
                 row["Version"],
