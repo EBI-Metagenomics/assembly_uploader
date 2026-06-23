@@ -22,7 +22,7 @@ export ENA_WEBIN_PASSWORD=password
 ### Installation with conda (recommended)
 
 ```bash
-conda install bioconda::assembly-uploader
+conda install bioconda::assembly_uploader
 ```
 
 ### Installation with pip 
