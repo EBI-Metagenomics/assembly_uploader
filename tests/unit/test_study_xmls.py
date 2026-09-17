@@ -28,7 +28,7 @@ def test_study_xmls(tmp_path, study_reg_xml_content, study_submission_xml_conten
     study_reg.write_study_xml()
     assert (
         study_reg._title
-        == "Metagenome assembly of PRJEB41657 data set (HoloFood Salmon Trial A+B Gut Metagenome)"
+        == "Metagenomic assembly of PRJEB41657 data set (HoloFood Salmon Trial A+B Gut Metagenome)"
     )
 
     assert study_reg.study_xml_path.is_relative_to(tmp_path)
@@ -73,7 +73,7 @@ def test_study_xmls_test(tmp_path, study_reg_xml_content, study_submission_xml_c
     study_reg.write_study_xml()
     assert (
         study_reg._title
-        == "Metagenome assembly of PRJEB41657 data set (HoloFood Salmon Trial A+B Gut Metagenome)"
+        == "Metagenomic assembly of PRJEB41657 data set (HoloFood Salmon Trial A+B Gut Metagenome)"
     )
 
     assert study_reg.study_xml_path.is_relative_to(tmp_path)

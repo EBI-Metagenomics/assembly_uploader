@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <PROJECT_SET>
 	<PROJECT alias="PRJEB41657_assembly" center_name="EMG">
-		<TITLE>Metagenome assembly of PRJEB41657 data set (HoloFood Salmon Trial A+B Gut Metagenome)</TITLE>
+		<TITLE>Metagenomic assembly of PRJEB41657 data set (HoloFood Salmon Trial A+B Gut Metagenome)</TITLE>
 		<DESCRIPTION>The Third Party Annotation (TPA) assembly was derived from the primary data set PRJEB41657</DESCRIPTION>
 		<SUBMISSION_PROJECT>
 			<SEQUENCING_PROJECT/>
@@ -21,7 +21,7 @@
 			</PROJECT_ATTRIBUTE>
 			<PROJECT_ATTRIBUTE>
 				<TAG>new_study_type</TAG>
-				<VALUE>metagenome assembly</VALUE>
+				<VALUE>metagenomic assembly</VALUE>
 			</PROJECT_ATTRIBUTE>
 		</PROJECT_ATTRIBUTES>
 	</PROJECT>

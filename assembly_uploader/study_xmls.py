@@ -23,13 +23,21 @@ from pathlib import Path
 
 import click
 
+from .constants import METAGENOME, METATRANSCRIPTOME, MIXED
 from .ena_queries import EnaQuery
 
-METAGENOME = "metagenome"
-METATRANSCRIPTOME = "metatranscriptome"
-
-
 __version__ = importlib.metadata.version("assembly_uploader")
+
+
+def library_adjective(library: str) -> str:
+    """Convert a library keyword into its adjective form, e.g. metagenome -> metagenomic."""
+    if library == MIXED:
+        return f"{METAGENOME[:-1]}ic and {METATRANSCRIPTOME[:-1]}ic"
+    if library in (METAGENOME, METATRANSCRIPTOME):
+        return f"{library[:-1]}ic"
+    raise ValueError(
+        f"library must be one of {METAGENOME}, {METATRANSCRIPTOME}, {MIXED}, got {library!r}"
+    )
 
 
 class StudyXMLGenerator:
@@ -50,7 +58,7 @@ class StudyXMLGenerator:
 
         :param study: raw reads study ID/accession
         :param center_name: submission centre name, e.g. EMG
-        :param library: {METAGENOME} or {METATRANSCRIPTOME}
+        :param library: {METAGENOME} or {METATRANSCRIPTOME} or {MIXED}
         :param hold_date: hold date for the data to remain private, if it should be different from the provided study"
         :param tpa: is this a third-party assembly?
         :param output_dir: path to output directory (default is CWD)
@@ -73,9 +81,7 @@ class StudyXMLGenerator:
         self.center = center_name
         self.hold_date = hold_date
 
-        assert library in [METAGENOME, METATRANSCRIPTOME]
-
-        self.library = library
+        self.library = library_adjective(library)
         self.tpa = tpa
         self.publication = publication
         self.private = private
@@ -189,9 +195,9 @@ class StudyXMLGenerator:
 @click.option("--study", required=True, help="Raw reads study ID")
 @click.option(
     "--library",
-    type=click.Choice(["metagenome", "metatranscriptome"], case_sensitive=False),
+    type=click.Choice([METAGENOME, METATRANSCRIPTOME, MIXED], case_sensitive=False),
     required=True,
-    help="Library type",
+    help="Library type (use 'mixed' if study contains metagenomic and metatranscriptomic data)",
 )
 @click.option("--center", required=True, help="Center for upload e.g. EMG")
 @click.option(

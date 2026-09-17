@@ -45,7 +45,7 @@ This step will generate a folder `<STUDY>_upload` and a project XML and submissi
 ```bash
 study_xmls
   --study STUDY         raw reads study ID
-  --library LIBRARY     metagenome or metatranscriptome
+  --library LIBRARY     metagenome, metatranscriptome, or mixed (if study contains metagenomic and metatranscriptomic data)
   --center CENTER       center for upload e.g. EMG
   --hold HOLD           hold date (private) if it should be different from the provided study in format dd-mm-yyyy. Will inherit the release date of the raw read study if not
                         provided.
@@ -80,7 +80,7 @@ This step will generate manifest files in the folder `<STUDY>_upload` for runs s
 ```bash
 assembly_manifest
   --study STUDY         raw reads study ID
-  --data DATA           metadata table - run(s) (comma-separated and in quotes for CSV input, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath and sample [optional]
+  --data DATA           metadata table - run(s) (comma-separated and in quotes for CSV input, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath, sample [optional] and library [optional, metagenome or metatranscriptome, defaults to metagenome]
   --data-delimiter      DATA delimiter, default: comma
   --assembly_study ASSEMBLY_STUDY
                         pre-existing study ID to submit to if available. Must exist in the webin account
@@ -91,7 +91,7 @@ assembly_manifest
 
 #### Step 4: upload assemblies
 
-Once manifest files are generated, it is necessary to use ENA's [webin-cli](https://github.com/enasequence/webin-cli) resource to upload the metagenome assemblies.
+Once manifest files are generated, it is necessary to use ENA's [webin-cli](https://github.com/enasequence/webin-cli) resource to upload the metagenome/metatranscriptome assemblies.
 More information on ENA's webin-cli can be found [in the ENA docs](<https://ena-docs.readthedocs.io/en/latest/submit/general-guide/webin-cli.html>).
 
 We recommend using a pre-installed [**webin_cli_handler**](https://github.com/EBI-Metagenomics/mgnify-pipelines-toolkit/blob/dev/mgnify_pipelines_toolkit/ena/webin_cli_handler.py) script.
@@ -106,7 +106,7 @@ Run live execution:
 ```bash
 webin_cli_handler \
   --manifest *.manifest \
-  --context genome \
+  --context genome/metatranscriptome \
   --mode submit \
   [--test]
 ```
