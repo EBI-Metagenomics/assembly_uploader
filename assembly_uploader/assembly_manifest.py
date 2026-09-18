@@ -24,6 +24,7 @@ from pathlib import Path
 
 import click
 
+from .constants import METAGENOME, METATRANSCRIPTOME
 from .ena_queries import EnaQuery
 
 logging.basicConfig(level=logging.INFO)
@@ -102,6 +103,8 @@ class AssemblyManifestGenerator:
         :param assembly_study: study accession of the assembly study (e.g. created by Study XMLs)
         :param assemblies_table: path to assemblies file, listing runs, coverage, assembler, version, filepath of each assembly
                             Optionally, a 'Sample' column can be included to specify sample accession for co-assemblies
+                            Optionally, a 'Library' column can be included (metagenome or metatranscriptome);
+                            defaults to metagenome when not specified
         :param assemblies_table_delimiter: assembly table delimiter (default: comma)
         :param output_dir: path to output directory, otherwise CWD
         :param force: overwrite existing manifests
@@ -130,6 +133,7 @@ class AssemblyManifestGenerator:
         assembler: str,
         assembler_version: str,
         assembly_path: Path,
+        library: str = METAGENOME,
     ) -> Path | None:
         """
         Generate a manifest file for submission to ENA.
@@ -143,6 +147,7 @@ class AssemblyManifestGenerator:
         :param assembler: Name of the assembler used.
         :param assembler_version: Version of the assembler.
         :param assembly_path: Path to the assembly FASTA file (gzipped).
+        :param library: metagenome or metatranscriptome. Defaults to metagenome.
 
         """
         runs_str = ",".join(runs)
@@ -169,6 +174,11 @@ class AssemblyManifestGenerator:
             assembly_md5, runs, self.test, sample=sample
         )
         assembler = f"{assembler} v{assembler_version}"
+        assembly_type = (
+            METATRANSCRIPTOME
+            if library == METATRANSCRIPTOME
+            else f"primary {METAGENOME}"
+        )
         manifest_path = Path(self.upload_dir) / f"{assembly_md5[:12]}.manifest"
         #   skip existing manifests
         if os.path.exists(manifest_path) and not self.force:
@@ -180,7 +190,7 @@ class AssemblyManifestGenerator:
             ("STUDY", self.new_project),
             ("SAMPLE", sample),
             ("ASSEMBLYNAME", assembly_alias),
-            ("ASSEMBLY_TYPE", "primary metagenome"),
+            ("ASSEMBLY_TYPE", assembly_type),
             ("COVERAGE", coverage),
             ("PROGRAM", assembler),
             ("PLATFORM", sequencer),
@@ -244,6 +254,14 @@ class AssemblyManifestGenerator:
                 )
                 continue
 
+            library = (row.get("Library") or METAGENOME).strip().lower()
+            if library not in (METAGENOME, METATRANSCRIPTOME):
+                logging.error(
+                    f"Invalid Library value '{row.get('Library')}' for sample {sample_accession}. "
+                    f"Must be '{METAGENOME}' or '{METATRANSCRIPTOME}'. Skipping."
+                )
+                continue
+
             runs_list = row["Runs"].split(",") if row["Runs"] else []
             self.generate_manifest(
                 runs_list,
@@ -253,6 +271,7 @@ class AssemblyManifestGenerator:
                 row["Assembler"],
                 row["Version"],
                 Path(row["Filepath"]),
+                library=library,
             )
 
     # alias for convenience
