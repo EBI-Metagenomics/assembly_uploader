@@ -30,11 +30,11 @@ __version__ = importlib.metadata.version("assembly_uploader")
 
 
 def library_adjective(library: str) -> str:
-    """Convert a library keyword into its adjective form, e.g. metagenome -> metagenomic."""
+    """Convert a library keyword into its adjective form."""
     if library == MIXED:
-        return f"{METAGENOME[:-1]}ic and {METATRANSCRIPTOME[:-1]}ic"
+        return f"{METAGENOME} and {METATRANSCRIPTOME}"
     if library in (METAGENOME, METATRANSCRIPTOME):
-        return f"{library[:-1]}ic"
+        return library
     raise ValueError(
         f"library must be one of {METAGENOME}, {METATRANSCRIPTOME}, {MIXED}, got {library!r}"
     )
@@ -94,7 +94,7 @@ class StudyXMLGenerator:
         self._abstract = None
 
     def write_study_xml(self):
-        subtitle = self.library.title()
+        subtitle = self.library.capitalize()
         if self.tpa:
             sub_abstract = "Third Party Annotation (TPA) "
         else:
