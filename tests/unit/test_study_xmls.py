@@ -92,3 +92,37 @@ def test_study_xmls_test(tmp_path, study_reg_xml_content, study_submission_xml_c
     with study_reg.submission_xml_path.open() as f:
         content = f.readlines()
     assert content == study_submission_xml_content
+
+
+def test_study_xmls_mixed_library(tmp_path):
+    responses.add(
+        responses.POST,
+        "https://www.ebi.ac.uk/ena/portal/api/search",
+        json=[
+            {
+                "study_accession": "PRJEB41657",
+                "study_title": "HoloFood Salmon Trial A+B Gut Metagenome",
+                "first_public": "2022-08-02",
+            }
+        ],
+    )
+    study_reg = study_xmls.StudyXMLGenerator(
+        study="ERP125469",
+        center_name="EMG",
+        library=study_xmls.MIXED,
+        publication=1234,
+        tpa=True,
+        output_dir=tmp_path,
+    )
+    assert study_reg.library == "metagenome and metatranscriptome"
+
+    study_reg.write_study_xml()
+    assert (
+        study_reg._title
+        == "Metagenome and metatranscriptome assembly of PRJEB41657 data set "
+        "(HoloFood Salmon Trial A+B Gut Metagenome)"
+    )
+
+    with study_reg.study_xml_path.open() as f:
+        content = f.read()
+    assert "<VALUE>metagenome and metatranscriptome assembly</VALUE>" in content
