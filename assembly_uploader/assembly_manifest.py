@@ -45,22 +45,22 @@ def get_md5(path_to_file):
     return md5_hash.hexdigest()
 
 
-def create_assembly_alias(assembly_md5, runs, test=False, sample=None):
+def create_assembly_alias(assembly_md5, runs, sample, test=False):
     """
     Creates an alias for an assembly based on the MD5 of the FASTA file, runs,
     and an optional test flag.
 
     The alias consists of:
-    1. The first run accession (or sample accession when no runs); appends '_others' if multiple runs exist (co-assembly).
+    1. The first run accession prefixed with '_others' if multiple runs exist (co-assembly) or sample accession when no runs were provided.
     2. The first 12 characters of the MD5 hash of the assembly file for uniqueness.
     3. If `test` is True, a timestamp-based MD5 hash (first 8 characters) is added
         to make test submissions of the same day unique.
     4. Raises a ValueError if the alias exceeds 50 characters to comply with ENA standards.
 
     :param assembly_md5: The MD5 hash of the assembly FASTA file.
-    :param runs: A list of run accessions (may be empty for sample-only submissions).
+    :param runs: A list of run accessions (may be empty string for sample-only submissions).
     :param test: Flag indicating if the alias is for testing. Default is False.
-    :param sample: Sample accession, used as prefix when runs is empty.
+    :param sample: Sample accession, used as prefix when `runs` argument is empty.
     :return: The constructed assembly alias.
     :raises ValueError: If runs and sample are both absent, or if the alias exceeds 50 characters.
     """
@@ -128,7 +128,7 @@ class AssemblyManifestGenerator:
         self,
         runs: list,
         sample: str,
-        sequencer: str,
+        sequencer: list,
         coverage: str,
         assembler: str,
         assembler_version: str,
@@ -142,7 +142,7 @@ class AssemblyManifestGenerator:
 
         :param runs: Comma-separated list of ENA runs' accessions used in the assembly.
         :param sample: Sample accession. Can only be one sample accession, even for co-assemblies.
-        :param sequencer: Instrument model used for sequencing.
+        :param sequencer: List of instrument model(s) used for sequencing.
         :param coverage: Reported coverage of the assembly.
         :param assembler: Name of the assembler used.
         :param assembler_version: Version of the assembler.
@@ -151,7 +151,8 @@ class AssemblyManifestGenerator:
 
         """
         runs_str = ",".join(runs)
-        message_str = f"sample {sample}"
+        sequencer_str = ",".join(sequencer)
+        message_str = f"run(s) {runs_str}" if runs else f"sample {sample}"
         if runs_str:
             message_str += f" of run(s): {runs_str}"
 
@@ -159,20 +160,18 @@ class AssemblyManifestGenerator:
         #   sanity check assembly file provided
         if not assembly_path.exists():
             logging.error(
-                f"Assembly path {assembly_path} does not exist. Skipping manifest for run {message_str}"
+                f"Assembly path {assembly_path} does not exist. Skipping manifest for {message_str}"
             )
             return None
         valid_extensions = (".fa.gz", ".fna.gz", ".fasta.gz")
         if not str(assembly_path).endswith(valid_extensions):
             logging.error(
-                f"Assembly file {assembly_path} is either not fasta format or not compressed for run "
+                f"Assembly file {assembly_path} is either not fasta format or not compressed for "
                 f"{message_str}."
             )
             return None
         assembly_md5 = get_md5(assembly_path)
-        assembly_alias = create_assembly_alias(
-            assembly_md5, runs, self.test, sample=sample
-        )
+        assembly_alias = create_assembly_alias(assembly_md5, runs, sample, self.test)
         assembler = f"{assembler} v{assembler_version}"
         assembly_type = (
             METATRANSCRIPTOME
@@ -193,7 +192,7 @@ class AssemblyManifestGenerator:
             ("ASSEMBLY_TYPE", assembly_type),
             ("COVERAGE", coverage),
             ("PROGRAM", assembler),
-            ("PLATFORM", sequencer),
+            ("PLATFORM", sequencer_str),
             ("FASTA", assembly_path),
             ("TPA", str(self.tpa).lower()),
         ]
@@ -208,16 +207,10 @@ class AssemblyManifestGenerator:
 
     def write_manifests(self):
         for row in self.metadata:
-            sample_accessions = set()
-            instruments = set()
-
-            if not row["Runs"] and not row.get("Sample"):
-                logging.error(
-                    "At least one of Runs or Sample is required for submission. Skipping."
-                )
-                continue
-
             if row["Runs"]:
+                sample_accessions = set()
+                instruments = set()
+
                 for run in row["Runs"].split(","):
                     # TODO in theory private/non-private state can be different for runs in co-assembly
                     ena_query = EnaQuery(run, self.private)
@@ -225,34 +218,40 @@ class AssemblyManifestGenerator:
                     sample_accessions.add(ena_metadata["sample_accession"])
                     instruments.add(ena_metadata["instrument_model"])
 
-            # only one sample accession can be used for the assembly
-            if len(sample_accessions) == 1:
-                sample_accession = sample_accessions.pop()
-            elif row.get("Sample"):
-                sample_accession = row["Sample"]
-            else:
-                logging.error(
-                    f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. "
-                    f"Please specify a sample accession in the 'Sample' column of your table to resolve this. Skipping."
-                )
-                continue
-
-            # Determine platform: explicit column > derived from runs > queried from sample
-            platform = row.get("Platform") or ""
-            if not platform:
-                if instruments:
-                    platform = ",".join(instruments)
+                # only one sample accession can be used for the assembly
+                if len(sample_accessions) == 1:
+                    sample_accession = sample_accessions.pop()
+                elif row.get("Sample"):
+                    sample_accession = row["Sample"]
                 else:
-                    sample_query = EnaQuery(sample_accession, self.private)
-                    sample_data = sample_query.build_query() or {}
-                    platform = sample_data.get("instrument_model") or ""
+                    logging.error(
+                        f"Multiple samples found for runs {row['Runs']}: {sample_accessions}. "
+                        f"Please specify a sample accession in the 'Sample' column of your table to resolve this. Skipping."
+                    )
+                    continue
 
-            if not platform:
-                logging.error(
-                    f"Could not determine platform for sample {sample_accession}. "
-                    f"Please add a 'Platform' column to your table. Skipping."
+                # Platform: explicit column takes precedence over what's derived from the runs
+                platform = (
+                    row["Platform"].split(",")
+                    if row.get("Platform")
+                    else sorted(instruments)
                 )
-                continue
+                if not platform:
+                    logging.error(
+                        f"Could not determine platform for runs {row['Runs']}. Skipping."
+                    )
+                    continue
+
+                runs_list = row["Runs"].split(",")
+            else:
+                if not row.get("Sample") or not row.get("Platform"):
+                    logging.error(
+                        "When no Runs are given, both 'Sample' and 'Platform' columns are required. Skipping."
+                    )
+                    continue
+                sample_accession = row["Sample"]
+                platform = row["Platform"].split(",")
+                runs_list = []
 
             library = (row.get("Library") or METAGENOME).strip().lower()
             if library not in (METAGENOME, METATRANSCRIPTOME):

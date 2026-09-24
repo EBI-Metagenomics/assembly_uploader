@@ -77,10 +77,21 @@ submit_study
 
 This step will generate manifest files in the folder `<STUDY>_upload` for runs specified in the metadata file:
 
+##### Metadata table
+| Field       | Required                                        | Description                                                                                                                                                                                                                                                                     |
+|-------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Runs`      | No (Yes - if Sample and Platform are specified) | Comma-separated and in quotes list of RUN accession(s), example "SRR1234" or "SRR1234,SRR5678".                                                                                                                                                                                 |
+| `Coverage`  | Yes                                             | Reported coverage of the assembly.                                                                                                                                                                                                                                              |
+| `Assembler` | Yes                                             | Name of the assembler used.                                                                                                                                                                                                                                                     |
+| `Version`   | Yes                                             | Version of the assembler used.                                                                                                                                                                                                                                                  |
+| `Filepath`  | Yes                                             | Path to FASTA file with assembly.                                                                                                                                                                                                                                               |
+| `Sample`    | No (Yes - if Runs are not specified)            | Sample accession, example SAMN01234.                                                                                                                                                                                                                                            |
+| `Platform`  | No (Yes - if Runs are not specified)            | Sequencing platform(s), example DNBSEQ-G400. Comma-separated and in quotes if more than one, example "DNBSEQ-G400,ILLUMINA". Check [ENA documentation](https://ena-docs.readthedocs.io/en/latest/submit/reads/webin-cli.html#permitted-values-for-platform) for accepted values |
+
 ```bash
 assembly_manifest
   --study STUDY         raw reads study ID
-  --data DATA           metadata table - run(s) (comma-separated and in quotes for CSV input, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath, sample [optional] and library [optional, metagenome or metatranscriptome, defaults to metagenome]
+  --data DATA           metadata table
   --data-delimiter      DATA delimiter, default: comma
   --assembly_study ASSEMBLY_STUDY
                         pre-existing study ID to submit to if available. Must exist in the webin account
