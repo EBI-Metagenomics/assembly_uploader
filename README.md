@@ -87,6 +87,7 @@ This step will generate manifest files in the folder `<STUDY>_upload` for runs s
 | `Filepath`  | Yes                                             | Path to FASTA file with assembly.                                                                                                                                                                                                                                               |
 | `Sample`    | No (Yes - if Runs are not specified)            | Sample accession, example SAMN01234.                                                                                                                                                                                                                                            |
 | `Platform`  | No (Yes - if Runs are not specified)            | Sequencing platform(s), example DNBSEQ-G400. Comma-separated and in quotes if more than one, example "DNBSEQ-G400,ILLUMINA". Check [ENA documentation](https://ena-docs.readthedocs.io/en/latest/submit/reads/webin-cli.html#permitted-values-for-platform) for accepted values |
+| `Library`   | No                                              | Library strategy: metagenome or metatranscriptome. Default: metagenome                                                                                                                                                                                                          |
 
 ```bash
 assembly_manifest
