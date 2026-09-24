@@ -1,7 +1,7 @@
 - name: assembly_manifest test_correct_args
   tags:
     - assembly_manifest
-  command: assembly_manifest --study ERP125469 --data tests/fixtures/test_metadata --assembly_study PRJ1 --tpa
+  command: assembly_manifest --study ERP125469 --data tests/fixtures/test_metadata.csv --assembly_study PRJ1 --tpa
   files:
     - path: "ERP125469_upload/d41d8cd98f00.manifest"
       md5sum: 95307aa0c8cc96e75d1d4a06a9e4362a
