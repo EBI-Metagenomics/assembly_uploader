@@ -44,6 +44,8 @@ def parse_accession(accession):
         return "secondary_study_accession"
     elif "RR" in accession:
         return "run_accession"
+    elif accession.startswith(("SAM", "ERS", "SRS", "DRS")):
+        return "sample_accession"
     else:
         logging.error(f"{accession} is not a valid accession")
         sys.exit()
@@ -178,6 +180,35 @@ class EnaQuery:
         logging.info(f"{self.accession} public run returned from ENA")
         return run
 
+    def _get_public_sample(self):
+        data = {
+            "result": "read_run",
+            "query": f'sample_accession="{self.accession}"',
+            "fields": "instrument_model",
+            "format": "json",
+        }
+        response = self.retry_or_handle_request_error(self.post_request, data)
+        runs = json.loads(response.text)
+        instruments = {r["instrument_model"] for r in runs if r.get("instrument_model")}
+        logging.info(f"{self.accession} public sample returned from ENA")
+        return {
+            "instrument_model": ",".join(sorted(instruments)) if instruments else None
+        }
+
+    def _get_private_sample(self):
+        url = f"{self.private_url}runs?query=sampleId={self.accession}"
+        response = self.retry_or_handle_request_error(self.get_request, url)
+        runs = json.loads(response.text)
+        instruments = {
+            r["report"]["instrumentModel"]
+            for r in runs
+            if r.get("report", {}).get("instrumentModel")
+        }
+        logging.info(f"{self.accession} private sample returned from ENA")
+        return {
+            "instrument_model": ",".join(sorted(instruments)) if instruments else None
+        }
+
     def build_query(self):
         if "study" in self.acc_type:
             if self.private:
@@ -189,4 +220,9 @@ class EnaQuery:
                 ena_response = self._get_private_run()
             else:
                 ena_response = self._get_public_run()
+        elif "sample" in self.acc_type:
+            if self.private:
+                ena_response = self._get_private_sample()
+            else:
+                ena_response = self._get_public_sample()
         return ena_response
