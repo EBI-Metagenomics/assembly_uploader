@@ -153,8 +153,6 @@ class AssemblyManifestGenerator:
         runs_str = ",".join(runs)
         sequencer_str = ",".join(sequencer)
         message_str = f"run(s) {runs_str}" if runs else f"sample {sample}"
-        if runs_str:
-            message_str += f" of run(s): {runs_str}"
 
         logging.info(f"Writing manifest for {message_str}")
         #   sanity check assembly file provided
@@ -242,7 +240,6 @@ class AssemblyManifestGenerator:
                     )
                     continue
 
-                runs_list = row["Runs"].split(",")
             else:
                 if not row.get("Sample") or not row.get("Platform"):
                     logging.error(
@@ -251,7 +248,6 @@ class AssemblyManifestGenerator:
                     continue
                 sample_accession = row["Sample"]
                 platform = row["Platform"].split(",")
-                runs_list = []
 
             library = (row.get("Library") or METAGENOME).strip().lower()
             if library not in (METAGENOME, METATRANSCRIPTOME):
