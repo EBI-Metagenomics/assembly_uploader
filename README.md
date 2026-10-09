@@ -2,7 +2,7 @@
 Upload of metagenome and metatranscriptome assemblies to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena)
 
 Pre-requisites:
-- CSV metadata file. One per study. See `tests/fixtures/test_metadata` for an example
+- Metadata file. One per study. See `tests/fixtures/test_metadata.csv` for an example
 - Compressed assembly fasta files in the locations defined in the metadata file
 
 Set the following environmental variables with your webin details:
@@ -25,12 +25,12 @@ export ENA_WEBIN_PASSWORD=password
 conda install bioconda::assembly_uploader
 ```
 
-### Installation with pip 
+### Installation with pip
 
 ```bash
 pip install assembly-uploader
 ```
-Additionally, you need to download [the webin-cli.jar](https://github.com/enasequence/webin-cli) from the [latest release](https://github.com/enasequence/webin-cli/releases). 
+Additionally, you need to download [the webin-cli.jar](https://github.com/enasequence/webin-cli) from the [latest release](https://github.com/enasequence/webin-cli/releases).
 
 
 ## Usage
@@ -45,7 +45,7 @@ This step will generate a folder `<STUDY>_upload` and a project XML and submissi
 ```bash
 study_xmls
   --study STUDY         raw reads study ID
-  --library LIBRARY     metagenome or metatranscriptome
+  --library LIBRARY     metagenome, metatranscriptome, or mixed (if study contains metagenomic and metatranscriptomic data)
   --center CENTER       center for upload e.g. EMG
   --hold HOLD           hold date (private) if it should be different from the provided study in format dd-mm-yyyy. Will inherit the release date of the raw read study if not
                         provided.
@@ -77,10 +77,23 @@ submit_study
 
 This step will generate manifest files in the folder `<STUDY>_upload` for runs specified in the metadata file:
 
+##### Metadata table
+| Field       | Required                                        | Description                                                                                                                                                                                                                                                                     |
+|-------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Runs`      | No (Yes - if Sample and Platform are specified) | Comma-separated and in quotes list of RUN accession(s), example "SRR1234" or "SRR1234,SRR5678".                                                                                                                                                                                 |
+| `Coverage`  | Yes                                             | Reported coverage of the assembly.                                                                                                                                                                                                                                              |
+| `Assembler` | Yes                                             | Name of the assembler used.                                                                                                                                                                                                                                                     |
+| `Version`   | Yes                                             | Version of the assembler used.                                                                                                                                                                                                                                                  |
+| `Filepath`  | Yes                                             | Path to FASTA file with assembly.                                                                                                                                                                                                                                               |
+| `Sample`    | No (Yes - if Runs are not specified)            | Sample accession, example SAMN01234.                                                                                                                                                                                                                                            |
+| `Platform`  | No (Yes - if Runs are not specified)            | Sequencing platform(s), example DNBSEQ-G400. Comma-separated and in quotes if more than one, example "DNBSEQ-G400,ILLUMINA". Check [ENA documentation](https://ena-docs.readthedocs.io/en/latest/submit/reads/webin-cli.html#permitted-values-for-platform) for accepted values |
+| `Library`   | No                                              | Library strategy: metagenome or metatranscriptome. Default: metagenome                                                                                                                                                                                                          |
+
 ```bash
 assembly_manifest
   --study STUDY         raw reads study ID
-  --data DATA           metadata CSV - runs (comma-separated and in quotes, example: "SRR1234,SRR5678"), coverage, assembler, version, filepath and optionally sample
+  --data DATA           metadata table
+  --data-delimiter      DATA delimiter, default: comma
   --assembly_study ASSEMBLY_STUDY
                         pre-existing study ID to submit to if available. Must exist in the webin account
   --force               overwrite all existing manifests
@@ -90,7 +103,7 @@ assembly_manifest
 
 #### Step 4: upload assemblies
 
-Once manifest files are generated, it is necessary to use ENA's [webin-cli](https://github.com/enasequence/webin-cli) resource to upload the metagenome assemblies.
+Once manifest files are generated, it is necessary to use ENA's [webin-cli](https://github.com/enasequence/webin-cli) resource to upload the metagenome/metatranscriptome assemblies.
 More information on ENA's webin-cli can be found [in the ENA docs](<https://ena-docs.readthedocs.io/en/latest/submit/general-guide/webin-cli.html>).
 
 We recommend using a pre-installed [**webin_cli_handler**](https://github.com/EBI-Metagenomics/mgnify-pipelines-toolkit/blob/dev/mgnify_pipelines_toolkit/ena/webin_cli_handler.py) script.
@@ -105,7 +118,7 @@ Run live execution:
 ```bash
 webin_cli_handler \
   --manifest *.manifest \
-  --context genome \
+  --context genome/metatranscriptome \
   --mode submit \
   [--test]
 ```
@@ -118,7 +131,9 @@ webin_cli_handler
 
   -h, --help            show this help message and exit
   -m, --manifest MANIFEST
-                        Manifest text file containing file and metadata fields
+                        Path to a single manifest file or a directory containing manifest files
+  -o, --output-accessions OUTPUT_ACCESSIONS
+                        File to write assigned accessions to (TSV, default: ena_accessions.tsv)
   -c, --context {genome,transcriptome,sequence,polysample,reads,taxrefset}
                         Submission type: genome, transcriptome, sequence, polysample, reads, taxrefset
   --mode {submit,validate}
@@ -132,13 +147,14 @@ webin_cli_handler
                         Version of ena-webin-cli to download, default: latest
   --webin-cli-jar WEBIN_CLI_JAR
                         Path to pre-downloaded webin-cli.jar file to execute
-  --retries RETRIES     Number of retry attempts (default: 3)
+  --retries RETRIES     Number of retry attempts (must be >= 1, default: 3)
   --retry-delay RETRY_DELAY
-                        Initial retry delay in seconds (default: 5)
+                        Initial retry delay in seconds (must be >= 0, default: 5)
   --java-heap-size-initial JAVA_HEAP_SIZE_INITIAL
-                        Java initial heap size in GB (default: 10)
+                        Java initial heap size in GB (-Xms); only added when explicitly provided
   --java-heap-size-max JAVA_HEAP_SIZE_MAX
-                        Java maximum heap size in GB (default: 10)
+                        Java maximum heap size in GB (-Xmx); only added when explicitly provided
+
 ```
 
 #### Optional step 5: publicly releasing a private study
@@ -173,7 +189,7 @@ print(f"My assembly study has the accession {new_study_accession}")
 
 # Create manifest files for the assemblies to be uploaded
 # This assumes you have a CSV file detailing the assemblies with their assembler and coverage metadata
-# see tests/fixtures/test_metadata for an example
+# see tests/fixtures/test_metadata.csv for an example
 AssemblyManifestGenerator(
     study="SRP272267",
     assembly_study=new_study_accession,
