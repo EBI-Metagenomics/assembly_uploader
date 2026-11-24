@@ -203,7 +203,16 @@ class AssemblyManifestGenerator:
                 outfile.write(manifest)
         return manifest_path
 
-    def write_manifests(self):
+    def write_manifests(self) -> list[Path]:
+        """
+        Write a manifest file for each assembly in the metadata table.
+        Rows that cannot be processed (e.g. ambiguous sample, missing platform, missing assembly file)
+        are logged and skipped.
+
+        :return: paths of the manifest files written (or already existing, if not forcing),
+            in the order of the metadata table rows. Skipped rows are not included.
+        """
+        manifest_paths = []
         for row in self.metadata:
             if row["Runs"]:
                 sample_accessions = set()
@@ -258,7 +267,7 @@ class AssemblyManifestGenerator:
                 continue
 
             runs_list = row["Runs"].split(",") if row["Runs"] else []
-            self.generate_manifest(
+            manifest_path = self.generate_manifest(
                 runs_list,
                 sample_accession,
                 platform,
@@ -268,6 +277,9 @@ class AssemblyManifestGenerator:
                 Path(row["Filepath"]),
                 library=library,
             )
+            if manifest_path:
+                manifest_paths.append(manifest_path)
+        return manifest_paths
 
     # alias for convenience
     write = write_manifests

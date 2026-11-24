@@ -26,10 +26,14 @@ def test_assembly_manifest(assemblies_metadata_csv, tmp_path, run_manifest_conte
         output_dir=tmp_path,
         tpa=True,
     )
-    assembly_manifest_gen.write_manifests()
+    manifest_paths = assembly_manifest_gen.write_manifests()
 
     manifest_file = tmp_path / Path("ERP125469_upload/d41d8cd98f00.manifest")
     assert manifest_file.exists()
+    assert manifest_paths == [
+        manifest_file,
+        tmp_path / Path("ERP125469_upload/fb038a4a2af0.manifest"),  # co-assembly row
+    ]
 
     with manifest_file.open() as f:
         assert f.readlines() == run_manifest_content

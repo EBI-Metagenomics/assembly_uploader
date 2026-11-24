@@ -190,12 +190,14 @@ print(f"My assembly study has the accession {new_study_accession}")
 # Create manifest files for the assemblies to be uploaded
 # This assumes you have a CSV file detailing the assemblies with their assembler and coverage metadata
 # see tests/fixtures/test_metadata.csv for an example
-AssemblyManifestGenerator(
+manifest_paths = AssemblyManifestGenerator(
     study="SRP272267",
     assembly_study=new_study_accession,
-    assemblies_csv=Path("/path/to/my/assemblies.csv"),
+    assemblies_table=Path("/path/to/my/assemblies.csv"),
+    assemblies_table_delimiter=",",
     output_dir=Path("my-study"),
 ).write()
+print(f"Manifests to submit with webin-cli: {manifest_paths}")
 ```
 
 The ENA submission requires `webin-cli`, so follow [Step 4](#step-4-upload-assemblies) above.
